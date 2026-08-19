@@ -1,0 +1,14 @@
+import React from 'react';
+import Link from 'next/link';
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
+      {children}
+    </div>
+  );
+}
