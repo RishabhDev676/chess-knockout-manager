@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monsoon Chess Knockout Manager — README</title>
+  <style>
+    /* ===== Page & Typography ===== */
+    body {
+      font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.7;
+      color: #1a1a2e;
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 60px;
+    }
+
+    /* ===== Cover Header ===== */
+    .cover {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: #ffffff;
+      padding: 60px 60px 50px;
+      margin-bottom: 0;
+    }
+
+    .cover-title {
+      font-size: 32pt;
+      font-weight: 800;
+      margin: 0 0 10px 0;
+      letter-spacing: -0.5px;
+    }
+
+    .cover-subtitle {
+      font-size: 13pt;
+      color: #a8b2d8;
+      margin: 0 0 30px 0;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 24px;
+      font-size: 10pt;
+      color: #8892b0;
+      flex-wrap: wrap;
+    }
+
+    .cover-meta span {
+      background: rgba(255,255,255,0.08);
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    /* ===== Headings ===== */
+    h1 {
+      font-size: 22pt;
+      font-weight: 700;
+      color: #0f3460;
+      border-bottom: 3px solid #e94560;
+      padding-bottom: 8px;
+      margin: 40px 0 18px 0;
+    }
+
+    h2 {
+      font-size: 15pt;
+      font-weight: 700;
+      color: #16213e;
+      border-left: 4px solid #e94560;
+      padding-left: 12px;
+      margin: 32px 0 14px 0;
+    }
+
+    h3 {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #0f3460;
+      margin: 24px 0 8px 0;
+    }
+
+    h4 {
+      font-size: 11pt;
+      font-weight: 600;
+      color: #333;
+      margin: 16px 0 6px 0;
+    }
+
+    /* ===== Paragraphs & Lists ===== */
+    p {
+      margin: 8px 0 14px 0;
+    }
+
+    ul, ol {
+      margin: 8px 0 14px 0;
+      padding-left: 28px;
+    }
+
+    li {
+      margin-bottom: 5px;
+    }
+
+    /* ===== Tables ===== */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px 0;
+      font-size: 10.5pt;
+    }
+
+    thead tr {
+      background: #0f3460;
+      color: #ffffff;
+    }
+
+    thead th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f4f6fb;
+    }
+
+    tbody tr:hover {
+      background: #e8edfa;
+    }
+
+    tbody td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #dde3f0;
+    }
+
+    /* ===== Code Blocks ===== */
+    pre {
+      background: #1a1a2e;
+      color: #cdd6f4;
+      padding: 18px 22px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+      font-size: 9.5pt;
+      line-height: 1.6;
+      margin: 14px 0 20px 0;
+      border-left: 4px solid #e94560;
+    }
+
+    code {
+      background: #eef0fa;
+      color: #c0392b;
+      font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+      font-size: 9.5pt;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    /* ===== Blockquotes / Notes ===== */
+    blockquote {
+      border-left: 4px solid #f39c12;
+      background: #fffbf0;
+      padding: 12px 18px;
+      margin: 14px 0;
+      border-radius: 0 6px 6px 0;
+      color: #555;
+      font-size: 10.5pt;
+    }
+
+    blockquote.warning {
+      border-left-color: #e74c3c;
+      background: #fff5f5;
+      color: #c0392b;
+    }
+
+    blockquote.tip {
+      border-left-color: #27ae60;
+      background: #f0fff4;
+      color: #1e8449;
+    }
+
+    /* ===== Badges / Chips ===== */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 9pt;
+      font-weight: 600;
+      margin: 2px;
+    }
+
+    .badge-blue  { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-red   { background: #fee2e2; color: #dc2626; }
+
+    /* ===== Flow Diagram ===== */
+    .flow {
+      background: #f8faff;
+      border: 2px solid #dde3f0;
+      border-radius: 10px;
+      padding: 24px 32px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 10pt;
+      line-height: 2;
+      color: #1a1a2e;
+      margin: 16px 0;
+      text-align: center;
+    }
+
+    .flow .step {
+      font-weight: 700;
+      color: #0f3460;
+    }
+
+    .flow .arrow {
+      color: #e94560;
+      font-size: 14pt;
+      display: block;
+      line-height: 1.2;
+    }
+
+    /* ===== Feature Sections ===== */
+    .feature-card {
+      background: #f8faff;
+      border: 1px solid #dde3f0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 12px 0;
+    }
+
+    .feature-card h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    /* ===== Checklist ===== */
+    .checklist td:last-child {
+      text-align: center;
+      font-size: 14pt;
+    }
+
+    /* ===== Page Break ===== */
+    .page-break {
+      page-break-before: always;
+      border-top: 2px dashed #dde3f0;
+      margin: 48px 0 0 0;
+    }
+
+    /* ===== Footer ===== */
+    .doc-footer {
+      border-top: 2px solid #dde3f0;
+      margin-top: 48px;
+      padding-top: 20px;
+      color: #888;
+      font-size: 9pt;
+      text-align: center;
+    }
+
+    /* ===== TOC ===== */
+    .toc {
+      background: #f4f6fb;
+      border: 1px solid #dde3f0;
+      border-radius: 8px;
+      padding: 20px 28px;
+      margin: 24px 0;
+    }
+
+    .toc h2 {
+      border: none;
+      padding: 0;
+      margin: 0 0 12px 0;
+      font-size: 13pt;
+    }
+
+    .toc ol {
+      margin: 0;
+      column-count: 2;
+      column-gap: 24px;
+    }
+
+    .toc li {
+      margin-bottom: 4px;
+      font-size: 10pt;
+    }
+
+    .toc a {
+      color: #0f3460;
+      text-decoration: none;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #dde3f0;
+      margin: 32px 0;
+    }
+
+    /* Print styles */
+    @media print {
+      .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      pre { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ==================== COVER ==================== -->
+<div class="cover">
+  <div class="cover-title">♟️ Monsoon Chess Knockout Manager</div>
+  <div class="cover-subtitle">Full-Stack Tournament Management Web Application — Technical README</div>
+  <div class="cover-meta">
+    <span>🏫 Built for: Monsoon Sports Chess Tournament</span>
+    <span>⚙️ Stack: Next.js · Supabase · Tailwind CSS</span>
+    <span>▲ Deploy: Vercel</span>
+    <span>📅 2026</span>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== INTRO ==================== -->
+<p>
+  A <strong>fully functional, production-ready web application</strong> for managing college-level knockout chess tournaments.
+  Upload a player list via Excel, randomize pairings, enter match results round-by-round, and crown a champion —
+  all from any device, in real time.
+</p>
+
+<blockquote>
+  <strong>Live URL:</strong> Add your Vercel URL here after deployment<br/>
+  <strong>GitHub:</strong> <a href="https://github.com/RishabhDev676/chess-knockout-manager">github.com/RishabhDev676/chess-knockout-manager</a>
+</blockquote>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h2>📋 Table of Contents</h2>
+  <ol>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#tech-stack">Technology Stack</a></li>
+    <li><a href="#db-schema">Database Schema</a></li>
+    <li><a href="#app-structure">Application Structure</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#bye-handling">Bye / Non-Power-of-Two Handling</a></li>
+    <li><a href="#round-naming">Round Naming</a></li>
+    <li><a href="#local-dev">Setup — Local Development</a></li>
+    <li><a href="#supabase-setup">Setup — Supabase</a></li>
+    <li><a href="#github-setup">Setup — GitHub Repository</a></li>
+    <li><a href="#vercel">Deployment — Vercel</a></li>
+    <li><a href="#env-vars">Environment Variables</a></li>
+    <li><a href="#run-tournament">How to Run a Tournament</a></li>
+    <li><a href="#excel-format">Excel File Format</a></li>
+    <li><a href="#admin-account">Admin Account</a></li>
+    <li><a href="#testing">Testing Checklist</a></li>
+    <li><a href="#limitations">Limitations &amp; Assumptions</a></li>
+  </ol>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ==================== FEATURES ==================== -->
+<h1 id="features">✅ Features</h1>
+
+<div class="feature-card">
+  <h3>🗂 Excel Upload &amp; Player Management</h3>
+  <ul>
+    <li>Upload <code>.xlsx</code> or <code>.xls</code> files via drag-and-drop or file picker</li>
+    <li>Automatically extracts player names from the first column</li>
+    <li>Ignores empty rows and trims whitespace</li>
+    <li>Detects and warns about duplicate names</li>
+    <li>Displays the full player list with sequential numbering</li>
+    <li>Shows total player count before confirmation</li>
+    <li>"Confirm Player List" step before any tournament data is written</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>🎲 Random Pairing Engine</h3>
+  <ul>
+    <li>Uses <strong>Fisher-Yates shuffle</strong> seeded via <code>crypto.getRandomValues</code> for true randomness</li>
+    <li>No alphabetical sorting, no ratings, no seeding</li>
+    <li>Automatically handles non-power-of-two player counts via a <strong>Preliminary Round</strong> with byes</li>
+    <li>Winners from the preliminary round join bye players in Round 1</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>🏆 Knockout Tournament Logic</h3>
+  <ul>
+    <li>Single-elimination format — loser is immediately eliminated</li>
+    <li>Winner progresses to the next round</li>
+    <li>No double elimination, no consolation brackets</li>
+    <li>Works for any player count: 4, 8, 10, 16, 18, 20, 25, 32, 64, etc.</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>📋 Match Result Interface</h3>
+  <ul>
+    <li>Clean board cards: <strong>Player A vs Player B</strong></li>
+    <li>Two large, clearly-labelled winner buttons</li>
+    <li>Confirmation dialog before saving any result</li>
+    <li>Results are locked after confirmation</li>
+    <li><strong>Edit Result</strong> option to correct mistakes (admin only)</li>
+    <li>Eliminated players are visually marked</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>🔄 Round Progression</h3>
+  <ul>
+    <li>System tracks how many matches in a round are complete</li>
+    <li>Displays: <code>X / Y Matches Completed</code></li>
+    <li><strong>Generate Next Round</strong> button only appears when all matches are done</li>
+    <li>Winners are randomly re-paired for the next round</li>
+    <li>Eliminated players never re-appear</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>🏷 Automatic Round Naming</h3>
+  <table>
+    <thead>
+      <tr><th>Players Remaining</th><th>Round Name</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Non-power-of-2</td><td>Preliminary Round</td></tr>
+      <tr><td>&gt; 32</td><td>Round of N</td></tr>
+      <tr><td>32</td><td>Round of 32</td></tr>
+      <tr><td>16</td><td>Round of 16</td></tr>
+      <tr><td>8</td><td>Quarterfinals</td></tr>
+      <tr><td>4</td><td>Semifinals</td></tr>
+      <tr><td>2</td><td>Final</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="feature-card">
+  <h3>📜 Tournament History</h3>
+  <ul>
+    <li>All previous rounds are preserved — never deleted</li>
+    <li>History page shows every board from every round</li>
+    <li>Each board shows: Player 1, Player 2, Winner ✓, Eliminated ✗</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>🏆 Final &amp; Champion</h3>
+  <ul>
+    <li>When 2 players remain, the <strong>Final</strong> is displayed prominently</li>
+    <li>After the final result is entered, the Champion screen is shown</li>
+    <li>Displays: 🏆 Champion name &amp; Runner-Up name</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>🌐 Public Tournament Page (<code>/tournament</code>)</h3>
+  <ul>
+    <li>No login required — anyone can view</li>
+    <li>Shows: tournament name, current round, all boards, results</li>
+    <li>Previous rounds visible in collapsible history</li>
+    <li><strong>Champion banner</strong> displayed when tournament is complete</li>
+    <li>Supabase Realtime for live updates without page refresh</li>
+    <li>30-second polling fallback if Realtime is unavailable</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>🔐 Admin Authentication</h3>
+  <ul>
+    <li>Protected <code>/admin</code> area using <strong>Supabase Auth</strong></li>
+    <li>Email + password login</li>
+    <li>No self-signup — admin account created manually in Supabase</li>
+    <li>All mutating operations are verified server-side</li>
+    <li>Session persists across browser refreshes</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>📱 Mobile Responsive</h3>
+  <ul>
+    <li>Works on desktop, laptop, tablet, and mobile</li>
+    <li>Winner buttons are large and thumb-friendly</li>
+    <li>Match cards stack vertically on small screens</li>
+    <li>Navigation collapses to a mobile menu</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>🔁 Multiple Tournaments</h3>
+  <ul>
+    <li>Start a new tournament without deleting historical ones</li>
+    <li>All historical tournaments remain accessible</li>
+    <li>Only one tournament is "active" at a time</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>🛡 Safety &amp; Error Handling</h3>
+  <ul>
+    <li>Confirmation dialogs for all destructive actions</li>
+    <li>Cannot generate next round until current round is complete</li>
+    <li>Cannot re-submit a result for a locked match</li>
+    <li>Eliminated players cannot re-enter any round</li>
+    <li>User-friendly error messages (no raw stack traces)</li>
+    <li>Handles: invalid Excel, empty Excel, duplicate names, network failures, unauthorized access</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h3>💾 Data Persistence</h3>
+  <ul>
+    <li>All data stored in <strong>Supabase PostgreSQL</strong></li>
+    <li>Refreshing the browser restores full tournament state</li>
+    <li>No data is ever stored only in browser memory or localStorage</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ==================== TECH STACK ==================== -->
+<h1 id="tech-stack">🛠 Technology Stack</h1>
+
+<table>
+  <thead>
+    <tr><th>Layer</th><th>Technology</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Framework</td><td>Next.js 15 (App Router)</td></tr>
+    <tr><td>Language</td><td>TypeScript</td></tr>
+    <tr><td>Styling</td><td>Tailwind CSS</td></tr>
+    <tr><td>Database</td><td>Supabase (PostgreSQL)</td></tr>
+    <tr><td>Auth</td><td>Supabase Auth</td></tr>
+    <tr><td>Realtime</td><td>Supabase Realtime</td></tr>
+    <tr><td>Excel Parsing</td><td>SheetJS (<code>xlsx</code>)</td></tr>
+    <tr><td>Icons</td><td>Lucide React</td></tr>
+    <tr><td>Deployment</td><td>Vercel</td></tr>
+    <tr><td>Hosting</td><td>GitHub → Vercel CI/CD</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== DATABASE SCHEMA ==================== -->
+<h1 id="db-schema">🗄 Database Schema</h1>
+
+<p>Four PostgreSQL tables with foreign key relationships and Row Level Security (RLS).</p>
+
+<pre>
+-- Tournaments
+CREATE TABLE tournaments (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name          TEXT NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'setup',
+  -- status: 'setup' | 'active' | 'complete'
+  winner_id     UUID REFERENCES players(id),
+  runner_up_id  UUID REFERENCES players(id),
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+
+-- Players
+CREATE TABLE players (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tournament_id   UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+  name            TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'active',
+  -- status: 'active' | 'eliminated' | 'champion'
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+-- Rounds
+CREATE TABLE rounds (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tournament_id   UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+  round_number    INTEGER NOT NULL,
+  round_name      TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'active',
+  -- status: 'active' | 'complete'
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+-- Matches
+CREATE TABLE matches (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  round_id        UUID NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+  board_number    INTEGER NOT NULL,
+  player1_id      UUID REFERENCES players(id),
+  player2_id      UUID REFERENCES players(id),  -- NULL if bye
+  winner_id       UUID REFERENCES players(id),
+  is_bye          BOOLEAN NOT NULL DEFAULT false,
+  status          TEXT NOT NULL DEFAULT 'pending',
+  -- status: 'pending' | 'complete'
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+</pre>
+
+<h2>Row Level Security (RLS)</h2>
+<table>
+  <thead>
+    <tr><th>Table</th><th>Public (anon)</th><th>Admin (authenticated)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>tournaments</td><td>SELECT</td><td>SELECT, INSERT, UPDATE, DELETE</td></tr>
+    <tr><td>players</td><td>SELECT</td><td>SELECT, INSERT, UPDATE, DELETE</td></tr>
+    <tr><td>rounds</td><td>SELECT</td><td>SELECT, INSERT, UPDATE, DELETE</td></tr>
+    <tr><td>matches</td><td>SELECT</td><td>SELECT, INSERT, UPDATE, DELETE</td></tr>
+  </tbody>
+</table>
+
+<div class="page-break"></div>
+
+<!-- ==================== APP STRUCTURE ==================== -->
+<h1 id="app-structure">📁 Application Structure</h1>
+
+<pre>
+chess-knockout-manager/
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx                    # Root layout
+│   │   ├── page.tsx                      # Redirect to /tournament
+│   │   ├── tournament/
+│   │   │   └── page.tsx                  # Public live view
+│   │   └── admin/
+│   │       ├── layout.tsx                # Auth guard
+│   │       ├── page.tsx                  # Dashboard
+│   │       ├── login/page.tsx            # Login form
+│   │       ├── players/page.tsx          # Excel upload
+│   │       ├── rounds/page.tsx           # Current round + results
+│   │       └── history/page.tsx          # All past rounds
+│   ├── components/
+│   │   ├── ui/                           # Button, Card, Badge, Modal, etc.
+│   │   ├── admin/
+│   │   │   ├── ExcelUpload.tsx
+│   │   │   ├── PlayerList.tsx
+│   │   │   ├── MatchCard.tsx
+│   │   │   ├── RoundProgress.tsx
+│   │   │   └── ResultConfirmModal.tsx
+│   │   └── public/
+│   │       ├── LiveRound.tsx
+│   │       └── ChampionBanner.tsx
+│   ├── lib/
+│   │   ├── supabase/
+│   │   │   ├── client.ts                 # Browser Supabase client
+│   │   │   └── server.ts                 # Server Supabase client
+│   │   ├── tournament/
+│   │   │   ├── pairing.ts                # Fisher-Yates + bye logic
+│   │   │   ├── roundNaming.ts            # Round name calculator
+│   │   │   └── brackets.ts              # Bracket utilities
+│   │   ├── excel/
+│   │   │   └── parseExcel.ts             # SheetJS parser
+│   │   └── types.ts                      # Shared TypeScript types
+│   └── middleware.ts                     # Route protection
+├── supabase/
+│   └── schema.sql                        # Full database schema + RLS
+├── .env.local.example                    # Environment variable template
+├── .gitignore
+├── next.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+└── README.md
+</pre>
+
+<!-- ==================== HOW IT WORKS ==================== -->
+<h1 id="how-it-works">⚙️ How It Works</h1>
+
+<div class="flow">
+  <span class="step">UPLOAD EXCEL (.xlsx)</span>
+  <span class="arrow">↓</span>
+  <span class="step">EXTRACT PLAYER NAMES</span>
+  <span>(trim whitespace · deduplicate · ignore blank rows)</span>
+  <span class="arrow">↓</span>
+  <span class="step">DISPLAY PLAYER LIST</span>
+  <span>(e.g. "32 players loaded")</span>
+  <span class="arrow">↓</span>
+  <span class="step">CONFIRM PLAYERS</span>
+  <span>(admin clicks "Start Tournament")</span>
+  <span class="arrow">↓</span>
+  <span class="step">RANDOMIZE</span>
+  <span>(Fisher-Yates shuffle)</span>
+  <span class="arrow">↓</span>
+  <span class="step">GENERATE ROUND 1</span>
+  <span>(or Preliminary Round if needed)</span>
+  <span class="arrow">↓</span>
+  <span class="step">PLAY MATCHES</span>
+  <span class="arrow">↓</span>
+  <span class="step">ADMIN CLICKS WINNER → CONFIRMATION DIALOG → RESULT SAVED</span>
+  <span class="arrow">↓</span>
+  <span class="step">ALL MATCHES COMPLETE?</span>
+  <span>→ NO: Wait · → YES: "Generate Next Round" appears</span>
+  <span class="arrow">↓</span>
+  <span class="step">GENERATE NEXT ROUND</span>
+  <span>(only winners are re-paired)</span>
+  <span class="arrow">↓</span>
+  <span class="step">REPEAT UNTIL 2 PLAYERS LEFT</span>
+  <span class="arrow">↓</span>
+  <span class="step">FINAL MATCH</span>
+  <span class="arrow">↓</span>
+  <span class="step" style="color:#e94560; font-size:13pt;">🏆 CHAMPION DECLARED</span>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ==================== BYE HANDLING ==================== -->
+<h1 id="bye-handling">🔢 Bye / Non-Power-of-Two Handling</h1>
+
+<p>When the player count is not a power of two, the app runs a <strong>Preliminary Round</strong> to bring the field to the nearest power of two.</p>
+
+<h3>Algorithm</h3>
+<pre>
+Given N players:
+  target = smallest power of 2 ≥ N
+  byes   = target - N
+
+  If byes == 0: standard round, all N players play
+  If byes > 0:
+    - `byes` randomly chosen players get automatic byes
+    - Remaining (N - byes) players play each other in pairs
+    - After Preliminary:
+      byes players + winners from prelim = target players
+    - Target players play Round 1 properly
+</pre>
+
+<h3>Examples</h3>
+<table>
+  <thead>
+    <tr><th>Players</th><th>Target (power of 2)</th><th>Byes</th><th>Prelim Matches</th><th>Round 1 Players</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>8</td><td>8</td><td>0</td><td>— (no prelim)</td><td>8</td></tr>
+    <tr><td>10</td><td>16</td><td>6</td><td>2</td><td>8</td></tr>
+    <tr><td>16</td><td>16</td><td>0</td><td>— (no prelim)</td><td>16</td></tr>
+    <tr><td>18</td><td>32</td><td>14</td><td>2</td><td>16</td></tr>
+    <tr><td>25</td><td>32</td><td>7</td><td>9</td><td>16</td></tr>
+    <tr><td>32</td><td>32</td><td>0</td><td>— (no prelim)</td><td>32</td></tr>
+  </tbody>
+</table>
+
+<p>Byes are displayed as:</p>
+<pre>
+Board 3
+Player A — BYE (Auto-advances to next round)
+</pre>
+
+<!-- ==================== LOCAL DEV ==================== -->
+<h1 id="local-dev">🚀 Setup — Local Development</h1>
+
+<h3>Prerequisites</h3>
+<ul>
+  <li>Node.js 18+ installed</li>
+  <li>npm or yarn</li>
+  <li>Git</li>
+  <li>A Supabase account (free tier is fine)</li>
+</ul>
+
+<h3>Step 1 — Clone the repository</h3>
+<pre>
+git clone https://github.com/RishabhDev676/chess-knockout-manager.git
+cd chess-knockout-manager
+</pre>
+
+<h3>Step 2 — Install dependencies</h3>
+<pre>
+npm install
+</pre>
+
+<h3>Step 3 — Configure environment variables</h3>
+<pre>
+# On Windows PowerShell:
+Copy-Item .env.local.example .env.local
+
+# On Mac/Linux:
+cp .env.local.example .env.local
+</pre>
+<p>Then edit <code>.env.local</code> with your Supabase credentials.</p>
+
+<h3>Step 4 — Run locally</h3>
+<pre>
+npm run dev
+</pre>
+<p>Open <strong>http://localhost:3000</strong> in your browser.</p>
+
+<h3>Step 5 — Admin login</h3>
+<p>Go to <strong>http://localhost:3000/admin/login</strong> and log in with the admin credentials you created in Supabase.</p>
+
+<div class="page-break"></div>
+
+<!-- ==================== SUPABASE SETUP ==================== -->
+<h1 id="supabase-setup">🔧 Setup — Supabase</h1>
+
+<ol>
+  <li>Go to <strong>https://supabase.com</strong> and create a free account</li>
+  <li>Click <strong>"New Project"</strong> and fill in:
+    <ul>
+      <li><strong>Project name:</strong> chess-knockout-manager</li>
+      <li><strong>Database password:</strong> (save this securely)</li>
+      <li><strong>Region:</strong> Choose closest to India (e.g., <code>ap-south-1</code>)</li>
+    </ul>
+  </li>
+  <li>Wait for the project to be ready (~1 minute)</li>
+  <li>Go to <strong>SQL Editor</strong> in the Supabase dashboard</li>
+  <li>Copy and paste the contents of <code>supabase/schema.sql</code> and click <strong>Run</strong></li>
+  <li>Go to <strong>Project Settings → API</strong>:
+    <ul>
+      <li>Copy <strong>Project URL</strong> → this is your <code>NEXT_PUBLIC_SUPABASE_URL</code></li>
+      <li>Copy <strong>anon / public key</strong> → this is your <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></li>
+    </ul>
+  </li>
+  <li>To create the admin user:
+    <ul>
+      <li>Go to <strong>Authentication → Users</strong></li>
+      <li>Click <strong>"Add user"</strong></li>
+      <li>Enter admin email and password → <strong>Create user</strong></li>
+    </ul>
+  </li>
+</ol>
+
+<blockquote class="warning">
+  ⚠️ <strong>Never</strong> share your <code>service_role</code> key. It is not needed for this application.
+</blockquote>
+
+<!-- ==================== GITHUB SETUP ==================== -->
+<h1 id="github-setup">🐙 Setup — GitHub Repository</h1>
+
+<h3>Step 1 — Create a new repository on GitHub</h3>
+<ol>
+  <li>Go to <strong>https://github.com/new</strong></li>
+  <li>Fill in:
+    <ul>
+      <li><strong>Repository name:</strong> chess-knockout-manager</li>
+      <li><strong>Description:</strong> Monsoon Chess Knockout Tournament Manager</li>
+      <li><strong>Visibility:</strong> Public or Private</li>
+      <li>❌ Do NOT check "Add a README" (already have one)</li>
+      <li>❌ Do NOT add .gitignore (already have one)</li>
+    </ul>
+  </li>
+  <li>Click <strong>"Create repository"</strong></li>
+</ol>
+
+<h3>Step 2 — Initialize Git and connect to GitHub</h3>
+<pre>
+git init
+git add .
+git commit -m "feat: initial project setup"
+git remote add origin https://github.com/RishabhDev676/chess-knockout-manager.git
+git branch -M main
+git push -u origin main
+</pre>
+
+<h3>Step 3 — Future pushes</h3>
+<pre>
+git add .
+git commit -m "your commit message"
+git push
+</pre>
+
+<!-- ==================== VERCEL ==================== -->
+<h1 id="vercel">▲ Deployment — Vercel</h1>
+
+<h3>Step 1 — Import to Vercel</h3>
+<ol>
+  <li>Go to <strong>https://vercel.com</strong> and sign in with GitHub</li>
+  <li>Click <strong>"Add New → Project"</strong></li>
+  <li>Find and select <strong>chess-knockout-manager</strong></li>
+  <li>Click <strong>"Import"</strong></li>
+</ol>
+
+<h3>Step 2 — Add Environment Variables</h3>
+<table>
+  <thead>
+    <tr><th>Variable Name</th><th>Value</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>NEXT_PUBLIC_SUPABASE_URL</code></td><td>Your Supabase project URL</td></tr>
+    <tr><td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td><td>Your Supabase anon key</td></tr>
+  </tbody>
+</table>
+
+<h3>Step 3 — Deploy</h3>
+<ul>
+  <li>Click <strong>"Deploy"</strong></li>
+  <li>Wait ~2 minutes for the build</li>
+  <li>Visit the generated URL — your app is live!</li>
+</ul>
+
+<h3>Step 4 — Configure Supabase Auth redirect</h3>
+<ol>
+  <li>Supabase Dashboard → <strong>Authentication → URL Configuration</strong></li>
+  <li>Add to <strong>Redirect URLs:</strong> <code>https://your-app.vercel.app/**</code></li>
+  <li>Save</li>
+</ol>
+
+<blockquote class="tip">
+  ✅ Every push to <code>main</code> on GitHub automatically triggers a new Vercel deployment.
+</blockquote>
+
+<div class="page-break"></div>
+
+<!-- ==================== ENV VARS ==================== -->
+<h1 id="env-vars">🔑 Environment Variables</h1>
+
+<pre>
+# .env.local  (development — never commit this file)
+
+# Supabase Project URL (safe to expose to browser)
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+
+# Supabase Anonymous Public Key (safe to expose to browser)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+</pre>
+
+<blockquote>
+  The <code>NEXT_PUBLIC_</code> prefix makes these available in the browser. This is intentional and safe
+  for the anon key — Supabase Row Level Security (RLS) protects your data from unauthorized writes.
+</blockquote>
+
+<!-- ==================== RUN TOURNAMENT ==================== -->
+<h1 id="run-tournament">🎮 How to Run a Tournament</h1>
+
+<h3>Before the Event</h3>
+<ol>
+  <li>Collect all player names</li>
+  <li>Create an Excel file (<code>.xlsx</code>) with player names in <strong>Column A</strong>, one per row</li>
+  <li>No headers needed (if present, they are auto-detected and skipped)</li>
+</ol>
+
+<h3>During the Event</h3>
+
+<table>
+  <thead>
+    <tr><th>Step</th><th>Action</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td>Go to <code>/admin/login</code> and log in</td></tr>
+    <tr><td>2</td><td>Go to <strong>Admin → Players</strong>, drag &amp; drop the Excel file, review the list, click <strong>"Confirm Players &amp; Start Tournament"</strong></td></tr>
+    <tr><td>3</td><td>The app auto-generates Round 1 with random pairings (Board 1, Board 2, etc.)</td></tr>
+    <tr><td>4</td><td>For each board: click the winner's name → confirm in the dialog</td></tr>
+    <tr><td>5</td><td>Once all matches are complete, click <strong>"Generate Next Round"</strong></td></tr>
+    <tr><td>6</td><td>Repeat steps 4–5 until only 2 players remain</td></tr>
+    <tr><td>7</td><td>Enter the Final result → 🏆 Champion screen is shown automatically</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== EXCEL FORMAT ==================== -->
+<h1 id="excel-format">📄 Excel File Format</h1>
+
+<p>The simplest valid Excel file:</p>
+
+<table>
+  <thead>
+    <tr><th>Column A (Player Names)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Rishabh</td></tr>
+    <tr><td>Arjun</td></tr>
+    <tr><td>Priya</td></tr>
+    <tr><td>Kavya</td></tr>
+    <tr><td>Siddharth</td></tr>
+    <tr><td>...</td></tr>
+  </tbody>
+</table>
+
+<h3>Rules</h3>
+<ul>
+  <li>Player names must be in <strong>Column A</strong> (first column)</li>
+  <li>One name per row</li>
+  <li>Rows with no name are ignored</li>
+  <li>Leading/trailing spaces are removed automatically</li>
+  <li>Duplicate names are flagged and deduplicated (you will see a warning)</li>
+  <li>File must be <code>.xlsx</code> or <code>.xls</code></li>
+  <li>Maximum recommended: 256 players (practical limit: 64 for a single-day event)</li>
+  <li>If the first cell contains a header like "Player Name", "Name", etc., it is automatically skipped</li>
+</ul>
+
+<!-- ==================== ADMIN ACCOUNT ==================== -->
+<h1 id="admin-account">👤 Admin Account</h1>
+
+<p>There is <strong>no signup page</strong> in the app. The admin account must be created directly in Supabase:</p>
+<ol>
+  <li>Supabase Dashboard → <strong>Authentication → Users → Add user</strong></li>
+  <li>Enter email and password → <strong>Create user</strong></li>
+  <li>Use these credentials at <code>/admin/login</code></li>
+</ol>
+
+<blockquote class="tip">
+  To add more admin accounts (e.g., for assistants), simply add more users in Supabase Auth.
+</blockquote>
+
+<div class="page-break"></div>
+
+<!-- ==================== TESTING CHECKLIST ==================== -->
+<h1 id="testing">✅ Testing Checklist</h1>
+
+<table class="checklist">
+  <thead>
+    <tr><th>Test Case</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Upload 4-player Excel</td><td>☐</td></tr>
+    <tr><td>Upload 8-player Excel</td><td>☐</td></tr>
+    <tr><td>Upload 10-player Excel (with byes)</td><td>☐</td></tr>
+    <tr><td>Upload 16-player Excel</td><td>☐</td></tr>
+    <tr><td>Upload 25-player Excel</td><td>☐</td></tr>
+    <tr><td>Upload 32-player Excel</td><td>☐</td></tr>
+    <tr><td>Excel with empty rows</td><td>☐</td></tr>
+    <tr><td>Excel with duplicate names</td><td>☐</td></tr>
+    <tr><td>Invalid file type (e.g., .pdf)</td><td>☐</td></tr>
+    <tr><td>Empty Excel file</td><td>☐</td></tr>
+    <tr><td>Click winner → cancel confirmation</td><td>☐</td></tr>
+    <tr><td>Click winner → confirm</td><td>☐</td></tr>
+    <tr><td>Edit a confirmed result</td><td>☐</td></tr>
+    <tr><td>All matches complete → Next Round appears</td><td>☐</td></tr>
+    <tr><td>Try Next Round before all matches done</td><td>☐</td></tr>
+    <tr><td>Final match entered</td><td>☐</td></tr>
+    <tr><td>Champion screen displayed</td><td>☐</td></tr>
+    <tr><td>Browser refresh mid-tournament</td><td>☐</td></tr>
+    <tr><td>Public page /tournament</td><td>☐</td></tr>
+    <tr><td>Admin logout</td><td>☐</td></tr>
+    <tr><td>Access /admin without login (should redirect)</td><td>☐</td></tr>
+    <tr><td>Vercel deployment</td><td>☐</td></tr>
+    <tr><td>Mobile layout on phone</td><td>☐</td></tr>
+    <tr><td>Supabase Realtime on public page</td><td>☐</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== LIMITATIONS ==================== -->
+<h1 id="limitations">⚠️ Limitations &amp; Assumptions</h1>
+
+<ol>
+  <li>
+    <strong>Single active tournament:</strong> Only one tournament can be "active" at a time.
+    Historical tournaments are preserved but cannot be edited once completed.
+  </li>
+  <li>
+    <strong>No player ratings or seeding:</strong> The system intentionally has no concept of ratings,
+    FIDE IDs, or seeds. All pairings are purely random (Fisher-Yates).
+  </li>
+  <li>
+    <strong>No bracket prediction:</strong> The app does not show a bracket tree or draw diagram
+    in advance. It generates each round only after the previous one completes.
+  </li>
+  <li>
+    <strong>No draw handling:</strong> The system assumes every match has a decisive result (win/loss).
+    Draws are not modeled. If a match ends in a draw, the tournament director must decide the winner
+    by any external method (blitz tiebreak, coin flip, etc.) and record it manually.
+  </li>
+  <li>
+    <strong>Single winner per board:</strong> The app allows only one winner per match.
+    No "walkovers" or "both eliminated" options.
+  </li>
+  <li>
+    <strong>Bye randomness:</strong> Byes are distributed randomly.
+    The system does not try to give byes to specific players (e.g., no "top seed gets a bye").
+  </li>
+  <li>
+    <strong>Browser required for admin:</strong> The admin interface requires a modern browser
+    with JavaScript enabled.
+  </li>
+  <li>
+    <strong>Supabase free tier limits:</strong> Free tier includes 500 MB database, 50,000 monthly
+    active users, and 2 GB bandwidth — more than enough for a college tournament.
+  </li>
+  <li>
+    <strong>No email notifications:</strong> The app does not send emails for results or round updates.
+  </li>
+  <li>
+    <strong>Offline mode:</strong> If the internet fails while entering a result, the app will show
+    an error and the result will <em>not</em> be saved. Re-enter the result when connectivity is restored.
+  </li>
+</ol>
+
+<hr/>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="doc-footer">
+  <p>
+    <strong>♟️ Monsoon Chess Knockout Manager</strong> &nbsp;|&nbsp;
+    MIT License — free to use, modify, and distribute &nbsp;|&nbsp;
+    Built with Next.js · Supabase · Tailwind CSS · Vercel
+  </p>
+  <p>Made for Monsoon Sports Chess Tournament 2026</p>
+</div>
+
+</div><!-- end .page -->
+</body>
+</html>
