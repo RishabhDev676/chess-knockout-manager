@@ -10,54 +10,107 @@ export async function fetchActiveTournament(): Promise<{
 }> {
   const supabase = createClient();
 
-  // Fetch active tournament (or most recent)
-  const { data: tournaments } = await supabase
-    .from('tournaments')
-    .select('*, winner:winner_id(*), runner_up:runner_up_id(*)')
-    .order('created_at', { ascending: false })
-    .limit(1);
+  try {
+    // 1. Fetch most recent tournament (simple select, no FK joins)
+    const { data: tournaments, error: tErr } = await supabase
+      .from('tournaments')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-  if (!tournaments || tournaments.length === 0) {
+    if (tErr) {
+      console.error('Error fetching tournaments:', tErr);
+      return { tournament: null, currentRound: null, allRounds: [], players: [] };
+    }
+
+    if (!tournaments || tournaments.length === 0) {
+      return { tournament: null, currentRound: null, allRounds: [], players: [] };
+    }
+
+    const tournament = tournaments[0] as Tournament;
+
+    // 2. Fetch all players for tournament
+    const { data: rawPlayers } = await supabase
+      .from('players')
+      .select('*')
+      .eq('tournament_id', tournament.id)
+      .order('name');
+
+    const playersList = (rawPlayers || []) as Player[];
+    const playerMap = new Map<string, Player>();
+    for (const p of playersList) {
+      playerMap.set(p.id, p);
+    }
+
+    // Attach winner/runner_up to tournament object in-memory
+    if (tournament.winner_id) {
+      (tournament as Tournament).winner = playerMap.get(tournament.winner_id) || null;
+    }
+    if (tournament.runner_up_id) {
+      (tournament as Tournament).runner_up = playerMap.get(tournament.runner_up_id) || null;
+    }
+
+    // 3. Fetch all rounds for tournament (simple select, no FK joins)
+    const { data: rawRounds } = await supabase
+      .from('rounds')
+      .select('*')
+      .eq('tournament_id', tournament.id)
+      .order('round_number', { ascending: true });
+
+    const roundsList = rawRounds || [];
+    const roundIds = roundsList.map((r) => r.id);
+
+    // 4. Fetch all matches for these rounds (simple select, no FK joins)
+    let matchesList: Match[] = [];
+    if (roundIds.length > 0) {
+      const { data: rawMatches } = await supabase
+        .from('matches')
+        .select('*')
+        .in('round_id', roundIds)
+        .order('board_number', { ascending: true });
+
+      if (rawMatches) {
+        // Join player references in-memory (avoids PostgREST PGRST200 ambiguity)
+        matchesList = rawMatches.map((m) => ({
+          ...m,
+          player1: m.player1_id ? playerMap.get(m.player1_id) || null : null,
+          player2: m.player2_id ? playerMap.get(m.player2_id) || null : null,
+          winner: m.winner_id ? playerMap.get(m.winner_id) || null : null,
+        })) as Match[];
+      }
+    }
+
+    // 5. Group matches by round_id
+    const matchesByRoundId = new Map<string, Match[]>();
+    for (const m of matchesList) {
+      if (!matchesByRoundId.has(m.round_id)) {
+        matchesByRoundId.set(m.round_id, []);
+      }
+      matchesByRoundId.get(m.round_id)!.push(m);
+    }
+
+    const sortedRounds: Round[] = roundsList.map((r) => ({
+      ...r,
+      matches: (matchesByRoundId.get(r.id) || []).sort(
+        (a: Match, b: Match) => a.board_number - b.board_number
+      ),
+    }));
+
+    const currentRound =
+      sortedRounds.find((r) => r.status === 'active') ||
+      sortedRounds[sortedRounds.length - 1] ||
+      null;
+
+    return {
+      tournament,
+      currentRound,
+      allRounds: sortedRounds,
+      players: playersList,
+    };
+  } catch (err) {
+    console.error('fetchActiveTournament crash:', err);
     return { tournament: null, currentRound: null, allRounds: [], players: [] };
   }
-
-  const tournament = tournaments[0] as Tournament;
-
-  // Fetch all players for tournament
-  const { data: players } = await supabase
-    .from('players')
-    .select('*')
-    .eq('tournament_id', tournament.id)
-    .order('name');
-
-  // Fetch all rounds with matches and player details
-  const { data: rounds } = await supabase
-    .from('rounds')
-    .select(`
-      *,
-      matches (
-        *,
-        player1:player1_id(*),
-        player2:player2_id(*),
-        winner:winner_id(*)
-      )
-    `)
-    .eq('tournament_id', tournament.id)
-    .order('round_number', { ascending: true });
-
-  const sortedRounds = (rounds || []).map((r) => ({
-    ...r,
-    matches: (r.matches || []).sort((a: Match, b: Match) => a.board_number - b.board_number),
-  })) as Round[];
-
-  const currentRound = sortedRounds.find((r) => r.status === 'active') || sortedRounds[sortedRounds.length - 1] || null;
-
-  return {
-    tournament,
-    currentRound,
-    allRounds: sortedRounds,
-    players: (players || []) as Player[],
-  };
 }
 
 export async function createTournament(

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   fetchActiveTournament,
   setMatchWinner,
@@ -182,7 +182,7 @@ export default function AdminRoundsPage() {
     );
   }
 
-  const rawMatches = currentRound?.matches || [];
+  const rawMatches = useMemo(() => currentRound?.matches || [], [currentRound?.matches]);
   const completedCount = rawMatches.filter((m) => m.status === 'complete').length;
   const totalCount = rawMatches.length;
 
@@ -191,21 +191,35 @@ export default function AdminRoundsPage() {
   const champion = tournament.winner || players.find((p) => p.id === tournament.winner_id) || null;
   const runnerUp = tournament.runner_up || players.find((p) => p.id === tournament.runner_up_id) || null;
 
-  // Auto-start next iteration immediately as soon as current iteration matches complete
+  // Primitive string key — useEffect only fires when match statuses actually change
+  const matchStatusesKey = useMemo(
+    () => rawMatches.map((m) => `${m.id}:${m.status}`).join(','),
+    [rawMatches]
+  );
+
+  // Auto-start next iteration when current iteration matches complete (stable deps)
   useEffect(() => {
     if (capacity === 'all' || !rawMatches.length) return;
-    const groups = groupMatchesByIteration(rawMatches, capacity, startedIterations);
-    
-    for (const group of groups) {
-      if (group.completedCount === group.totalCount && group.totalCount > 0) {
-        const nextIter = group.iterationIndex + 1;
-        const maxIter = groups[groups.length - 1].iterationIndex;
-        if (nextIter <= maxIter && !startedIterations.includes(nextIter)) {
-          setStartedIterations((prev) => [...prev, nextIter]);
+
+    setStartedIterations((prev) => {
+      const groups = groupMatchesByIteration(rawMatches, capacity, prev);
+      let updated = false;
+      const nextStarted = [...prev];
+
+      for (const group of groups) {
+        if (group.completedCount === group.totalCount && group.totalCount > 0) {
+          const nextIter = group.iterationIndex + 1;
+          const maxIter = groups[groups.length - 1].iterationIndex;
+          if (nextIter <= maxIter && !nextStarted.includes(nextIter)) {
+            nextStarted.push(nextIter);
+            updated = true;
+          }
         }
       }
-    }
-  }, [rawMatches, capacity, startedIterations]);
+
+      return updated ? nextStarted : prev;
+    });
+  }, [matchStatusesKey, capacity]);
 
   // Compute live active player IDs currently playing in started iterations
   const livePlayerIds = getLivePlayerIdsFromMatches(rawMatches, capacity, startedIterations);
