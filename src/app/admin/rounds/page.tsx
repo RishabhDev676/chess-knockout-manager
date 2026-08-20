@@ -24,6 +24,7 @@ import {
   groupMatchesByIteration,
   filterMatchesBySearch,
   getIterationForBoard,
+  getLivePlayerIdsFromMatches,
 } from '../../../lib/tournament/iteration';
 import { PlayCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
@@ -52,6 +53,8 @@ export default function AdminRoundsPage() {
   const [capacity, setCapacity] = useState<BoardCapacity>(4);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIteration, setSelectedIteration] = useState<number | 'all'>('all');
+  const [startedIterations, setStartedIterations] = useState<number[]>([1]);
+  const [hideActivePlayersInNext, setHideActivePlayersInNext] = useState<boolean>(true);
 
   // Modal states
   const [selectedWinner, setSelectedWinner] = useState<SelectedWinnerState | null>(null);
@@ -76,6 +79,13 @@ export default function AdminRoundsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleConfirmStartIteration = (iterIndex: number) => {
+    setStartedIterations((prev) => {
+      if (prev.includes(iterIndex)) return prev;
+      return [...prev, iterIndex];
+    });
+  };
 
   const handleOpenConfirmWinner = (
     match: Match,
@@ -136,6 +146,7 @@ export default function AdminRoundsPage() {
 
     try {
       await generateNextRoundForTournament(tournament.id);
+      setStartedIterations([1]);
       await loadData();
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to generate next round.');
@@ -180,11 +191,30 @@ export default function AdminRoundsPage() {
   const champion = tournament.winner || players.find((p) => p.id === tournament.winner_id) || null;
   const runnerUp = tournament.runner_up || players.find((p) => p.id === tournament.runner_up_id) || null;
 
+  // Auto-start next iteration immediately as soon as current iteration matches complete
+  useEffect(() => {
+    if (capacity === 'all' || !rawMatches.length) return;
+    const groups = groupMatchesByIteration(rawMatches, capacity, startedIterations);
+    
+    for (const group of groups) {
+      if (group.completedCount === group.totalCount && group.totalCount > 0) {
+        const nextIter = group.iterationIndex + 1;
+        const maxIter = groups[groups.length - 1].iterationIndex;
+        if (nextIter <= maxIter && !startedIterations.includes(nextIter)) {
+          setStartedIterations((prev) => [...prev, nextIter]);
+        }
+      }
+    }
+  }, [rawMatches, capacity, startedIterations]);
+
+  // Compute live active player IDs currently playing in started iterations
+  const livePlayerIds = getLivePlayerIdsFromMatches(rawMatches, capacity, startedIterations);
+
   // Filter matches by Search
   const searchedMatches = filterMatchesBySearch(rawMatches, searchQuery);
 
   // Group by Iteration
-  const iterationGroups = groupMatchesByIteration(searchedMatches, capacity);
+  const iterationGroups = groupMatchesByIteration(searchedMatches, capacity, startedIterations);
 
   // Filter by Selected Iteration
   const displayedMatches = searchedMatches.filter((m) => {
@@ -259,6 +289,9 @@ export default function AdminRoundsPage() {
           iterationGroups={iterationGroups}
           totalMatches={rawMatches.length}
           filteredMatchesCount={displayedMatches.length}
+          onConfirmStartIteration={handleConfirmStartIteration}
+          hideActivePlayers={hideActivePlayersInNext}
+          onToggleHideActivePlayers={setHideActivePlayersInNext}
         />
       )}
 
@@ -377,6 +410,7 @@ export default function AdminRoundsPage() {
           onClose={() => setMatchToManage(null)}
           targetMatch={matchToManage}
           allMatches={rawMatches}
+          livePlayerIds={livePlayerIds}
           onSuccess={async () => {
             await loadData();
           }}

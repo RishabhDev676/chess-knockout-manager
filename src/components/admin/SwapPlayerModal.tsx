@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Match } from '../../lib/types';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { UserX, RefreshCw, MoveHorizontal, AlertCircle, RotateCcw } from 'lucide-react';
+import { UserX, RefreshCw, MoveHorizontal, AlertCircle, RotateCcw, Search, X } from 'lucide-react';
 import { markPlayerAbsentForfeit, swapMatchPlayers, swapBoardNumbers } from '../../lib/tournament/actions';
 
 interface SwapPlayerModalProps {
@@ -13,6 +13,7 @@ interface SwapPlayerModalProps {
   targetMatch: Match;
   allMatches: Match[];
   onSuccess: () => Promise<void>;
+  livePlayerIds?: Set<string>;
 }
 
 export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
@@ -21,10 +22,14 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
   targetMatch,
   allMatches,
   onSuccess,
+  livePlayerIds,
 }) => {
   const [activeTab, setActiveTab] = useState<'absent' | 'swap-player' | 'shift-board'>('absent');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Search query for swap modal
+  const [swapSearchQuery, setSwapSearchQuery] = useState('');
 
   // Tab 1: Absent Forfeit State
   const [absentPlayerId, setAbsentPlayerId] = useState<string>(
@@ -42,10 +47,25 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
   const p1 = targetMatch.player1;
   const p2 = targetMatch.player2;
 
-  // Filter other pending matches
-  const otherPendingMatches = allMatches.filter(
-    (m) => m.id !== targetMatch.id && m.status === 'pending' && !m.is_bye
-  );
+  // Strictly filter pending matches (excluding matches that are completed, BYEs, have winners, or players actively playing)
+  const otherPendingMatches = allMatches.filter((m) => {
+    if (m.id === targetMatch.id || m.status !== 'pending' || m.is_bye || m.winner_id) return false;
+    if (livePlayerIds && livePlayerIds.size > 0) {
+      if (m.player1_id && livePlayerIds.has(m.player1_id)) return false;
+      if (m.player2_id && livePlayerIds.has(m.player2_id)) return false;
+    }
+    return true;
+  });
+
+  // Search filtered matches for swap
+  const filteredSwapMatches = otherPendingMatches.filter((m) => {
+    if (!swapSearchQuery.trim()) return true;
+    const q = swapSearchQuery.trim().toLowerCase();
+    const p1Name = m.player1?.name?.toLowerCase() || '';
+    const p2Name = m.player2?.name?.toLowerCase() || '';
+    const boardStr = `board ${m.board_number}`.toLowerCase();
+    return p1Name.includes(q) || p2Name.includes(q) || boardStr.includes(q) || m.board_number.toString() === q;
+  });
 
   const handleResetSelections = () => {
     setAbsentPlayerId(targetMatch.player1?.id || '');
@@ -53,6 +73,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
     setSelectedOtherMatchId('');
     setSelectedOtherSlot('player1');
     setSelectedBoardMatchId('');
+    setSwapSearchQuery('');
     setErrorMsg(null);
   };
 
@@ -214,8 +235,33 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
         {activeTab === 'swap-player' && (
           <div className="space-y-4">
             <p className="text-xs text-slate-300">
-              Swap an unavailable player from this match with an available player from another pending match.
+              Swap an unavailable player from this match with an available pending player from another match.
             </p>
+
+            {/* Search Input in Swap Modal */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                Search Pending Players / Boards to Swap With:
+              </label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-amber-400 absolute left-3 top-2.5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={swapSearchQuery}
+                  onChange={(e) => setSwapSearchQuery(e.target.value)}
+                  placeholder="Type player name or board number (e.g. Board 3)..."
+                  className="w-full rounded-xl bg-slate-950 border border-slate-800 pl-9 pr-8 py-2 text-xs text-slate-100 placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+                />
+                {swapSearchQuery && (
+                  <button
+                    onClick={() => setSwapSearchQuery('')}
+                    className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-200"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -241,8 +287,8 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
                   onChange={(e) => setSelectedOtherMatchId(e.target.value)}
                   className="w-full rounded-xl bg-slate-950 border border-slate-800 p-2.5 text-xs text-slate-100 font-medium focus:border-amber-500 focus:outline-none"
                 >
-                  <option value="">-- Select Pending Match --</option>
-                  {otherPendingMatches.map((m) => (
+                  <option value="">-- Select Pending Match ({filteredSwapMatches.length}) --</option>
+                  {filteredSwapMatches.map((m) => (
                     <option key={m.id} value={m.id}>
                       Board {m.board_number}: {m.player1?.name || 'P1'} vs {m.player2?.name || 'P2'}
                     </option>
@@ -282,8 +328,33 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
         {activeTab === 'shift-board' && (
           <div className="space-y-4">
             <p className="text-xs text-slate-300">
-              Swap board numbers with another match so this match moves to another physical board iteration (e.g. move to Iteration 2).
+              Swap board numbers with another pending match so this match moves to another physical board iteration.
             </p>
+
+            {/* Search Input in Shift Board Modal */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                Search Target Board / Player:
+              </label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-amber-400 absolute left-3 top-2.5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={swapSearchQuery}
+                  onChange={(e) => setSwapSearchQuery(e.target.value)}
+                  placeholder="Type player name or board number..."
+                  className="w-full rounded-xl bg-slate-950 border border-slate-800 pl-9 pr-8 py-2 text-xs text-slate-100 placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+                />
+                {swapSearchQuery && (
+                  <button
+                    onClick={() => setSwapSearchQuery('')}
+                    className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-200"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
 
             <div>
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
@@ -294,8 +365,8 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
                 onChange={(e) => setSelectedBoardMatchId(e.target.value)}
                 className="w-full rounded-xl bg-slate-950 border border-slate-800 p-2.5 text-xs text-slate-100 font-medium focus:border-amber-500 focus:outline-none"
               >
-                <option value="">-- Select Target Match --</option>
-                {otherPendingMatches.map((m) => (
+                <option value="">-- Select Target Match ({filteredSwapMatches.length}) --</option>
+                {filteredSwapMatches.map((m) => (
                   <option key={m.id} value={m.id}>
                     Board {m.board_number}: {m.player1?.name || 'P1'} vs {m.player2?.name || 'P2'}
                   </option>

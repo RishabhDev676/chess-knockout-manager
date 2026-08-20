@@ -10,6 +10,8 @@ export interface IterationGroup {
   matches: Match[];
   completedCount: number;
   totalCount: number;
+  isStarted: boolean;
+  status: 'unstarted' | 'live' | 'complete';
 }
 
 export function getIterationForBoard(boardNumber: number, capacity: BoardCapacity): {
@@ -45,11 +47,17 @@ export function getIterationForBoard(boardNumber: number, capacity: BoardCapacit
   };
 }
 
-export function groupMatchesByIteration(matches: Match[], capacity: BoardCapacity): IterationGroup[] {
+export function groupMatchesByIteration(
+  matches: Match[],
+  capacity: BoardCapacity,
+  startedIterations: number[] = [1]
+): IterationGroup[] {
   if (!matches || matches.length === 0) return [];
 
   if (capacity === 'all') {
     const completedCount = matches.filter((m) => m.status === 'complete').length;
+    const totalCount = matches.length;
+    const isDone = completedCount === totalCount;
     return [
       {
         iterationIndex: 1,
@@ -58,7 +66,9 @@ export function groupMatchesByIteration(matches: Match[], capacity: BoardCapacit
         endBoard: matches.length,
         matches,
         completedCount,
-        totalCount: matches.length,
+        totalCount,
+        isStarted: true,
+        status: isDone ? 'complete' : 'live',
       },
     ];
   }
@@ -80,6 +90,15 @@ export function groupMatchesByIteration(matches: Match[], capacity: BoardCapacit
     const startBoard = (iterIdx - 1) * capacity + 1;
     const endBoard = iterIdx * capacity;
     const completedCount = iterMatches.filter((m) => m.status === 'complete').length;
+    const totalCount = iterMatches.length;
+    const isDone = completedCount === totalCount && totalCount > 0;
+    const isStarted = startedIterations.includes(iterIdx) || isDone;
+
+    const status: 'unstarted' | 'live' | 'complete' = isDone
+      ? 'complete'
+      : isStarted
+      ? 'live'
+      : 'unstarted';
 
     result.push({
       iterationIndex: iterIdx,
@@ -88,7 +107,9 @@ export function groupMatchesByIteration(matches: Match[], capacity: BoardCapacit
       endBoard,
       matches: iterMatches,
       completedCount,
-      totalCount: iterMatches.length,
+      totalCount,
+      isStarted,
+      status,
     });
   }
 
@@ -114,4 +135,28 @@ export function filterMatchesBySearch(matches: Match[], query: string): Match[] 
       statusStr.includes(clean)
     );
   });
+}
+
+/**
+  * Returns set of player IDs currently playing in any active/started iteration (pending matches)
+  */
+export function getLivePlayerIdsFromMatches(
+  matches: Match[],
+  capacity: BoardCapacity,
+  startedIterations: number[]
+): Set<string> {
+  const livePlayerIds = new Set<string>();
+  if (capacity === 'all') return livePlayerIds;
+
+  for (const m of matches) {
+    if (m.status === 'pending') {
+      const iterIdx = Math.ceil(m.board_number / capacity);
+      if (startedIterations.includes(iterIdx)) {
+        if (m.player1_id) livePlayerIds.add(m.player1_id);
+        if (m.player2_id) livePlayerIds.add(m.player2_id);
+      }
+    }
+  }
+
+  return livePlayerIds;
 }
