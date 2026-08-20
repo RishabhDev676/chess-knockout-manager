@@ -155,41 +155,7 @@ export default function AdminRoundsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-20 text-slate-400 font-medium">
-        Loading Round & Match Data...
-      </div>
-    );
-  }
-
-  if (!tournament) {
-    return (
-      <div className="text-center py-16 space-y-4">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-2">
-          <PlayCircle className="h-8 w-8" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-100">No Active Tournament</h2>
-        <p className="text-xs text-slate-400 max-w-sm mx-auto">
-          Please upload an Excel file to start a tournament first.
-        </p>
-        <Link href="/admin/players">
-          <Button variant="primary" size="md">
-            Go to Player Setup
-          </Button>
-        </Link>
-      </div>
-    );
-  }
-
   const rawMatches = useMemo(() => currentRound?.matches || [], [currentRound?.matches]);
-  const completedCount = rawMatches.filter((m) => m.status === 'complete').length;
-  const totalCount = rawMatches.length;
-
-  const isFinalRound = currentRound?.round_name === 'Final';
-  const isTournamentComplete = tournament.status === 'complete';
-  const champion = tournament.winner || players.find((p) => p.id === tournament.winner_id) || null;
-  const runnerUp = tournament.runner_up || players.find((p) => p.id === tournament.runner_up_id) || null;
 
   // Primitive string key — useEffect only fires when match statuses actually change
   const matchStatusesKey = useMemo(
@@ -220,6 +186,43 @@ export default function AdminRoundsPage() {
       return updated ? nextStarted : prev;
     });
   }, [matchStatusesKey, capacity]);
+
+  // Keep all hooks above loading and empty-state returns. The first render has
+  // no tournament yet, so returning before these hooks would change hook order
+  // once the data loads and make React crash the page.
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20 text-slate-400 font-medium">
+        Loading Round & Match Data...
+      </div>
+    );
+  }
+
+  if (!tournament) {
+    return (
+      <div className="text-center py-16 space-y-4">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-2">
+          <PlayCircle className="h-8 w-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-100">No Active Tournament</h2>
+        <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          Please upload an Excel file to start a tournament first.
+        </p>
+        <Link href="/admin/players">
+          <Button variant="primary" size="md">
+            Go to Player Setup
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const completedCount = rawMatches.filter((m) => m.status === 'complete').length;
+  const totalCount = rawMatches.length;
+  const isFinalRound = currentRound?.round_name === 'Final';
+  const isTournamentComplete = tournament.status === 'complete';
+  const champion = tournament.winner || players.find((p) => p.id === tournament.winner_id) || null;
+  const runnerUp = tournament.runner_up || players.find((p) => p.id === tournament.runner_up_id) || null;
 
   // Compute live active player IDs currently playing in started iterations
   const livePlayerIds = getLivePlayerIdsFromMatches(rawMatches, capacity, startedIterations);
