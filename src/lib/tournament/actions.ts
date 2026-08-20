@@ -95,7 +95,7 @@ export async function createTournament(
 
   const playerIds = insertedPlayers.map((p) => p.id);
 
-  // 3. Generate Round 1 (or Preliminary Round) Pairings
+  // 3. Generate Round 1 Pairings
   const { roundName, pairings } = generateInitialPairings(playerIds);
 
   // 4. Create Round 1 row
@@ -328,4 +328,12 @@ export async function generateNextRoundForTournament(
   }
 
   return newRound as Round;
+}
+
+export async function deleteAllTournamentData(): Promise<void> {
+  const supabase = createClient();
+  await supabase.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('rounds').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('players').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('tournaments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 }

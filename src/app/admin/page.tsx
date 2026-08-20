@@ -2,32 +2,49 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { fetchActiveTournament } from '../../lib/tournament/actions';
+import { fetchActiveTournament, deleteAllTournamentData } from '../../lib/tournament/actions';
 import { Tournament, Round, Player } from '../../lib/types';
-import { Users, PlayCircle, History, Trophy, PlusCircle, AlertCircle, ShieldAlert } from 'lucide-react';
+import { Users, PlayCircle, History, Trophy, PlusCircle, ShieldAlert, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
 
 export default function AdminDashboardPage() {
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [currentRound, setCurrentRound] = useState<Round | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const load = async () => {
+    try {
+      const data = await fetchActiveTournament();
+      setTournament(data.tournament);
+      setCurrentRound(data.currentRound);
+      setPlayers(data.players);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function load() {
-      try {
-        const data = await fetchActiveTournament();
-        setTournament(data.tournament);
-        setCurrentRound(data.currentRound);
-        setPlayers(data.players);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
     load();
   }, []);
+
+  const handleDeleteAll = async () => {
+    setDeleting(true);
+    try {
+      await deleteAllTournamentData();
+      setDeleteModalOpen(false);
+      await load();
+    } catch (err) {
+      console.error('Failed to delete data:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -57,11 +74,23 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <Link href="/admin/players">
-          <Button variant="primary" size="lg" className="font-extrabold shadow-lg shadow-amber-600/20">
-            <PlusCircle className="w-5 h-5 mr-2" /> Start New Tournament
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          {tournament && (
+            <Button
+              variant="danger"
+              size="lg"
+              onClick={() => setDeleteModalOpen(true)}
+              className="font-bold"
+            >
+              <Trash2 className="w-4 h-4 mr-2" /> Reset Data
+            </Button>
+          )}
+          <Link href="/admin/players">
+            <Button variant="primary" size="lg" className="font-extrabold shadow-lg shadow-amber-600/20">
+              <PlusCircle className="w-5 h-5 mr-2" /> Start New Tournament
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Overview Cards */}
@@ -179,6 +208,39 @@ export default function AdminDashboardPage() {
           </div>
         </Link>
       </div>
+
+      {/* Confirmation Modal for Resetting All Data */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Delete All Tournament Data?"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-xl bg-rose-950/40 border border-rose-800/50 p-4 text-rose-200 text-xs leading-relaxed">
+            <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <div>
+              This will permanently delete all existing tournament data, player lists, rounds, and match results from the database. This action cannot be undone.
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteAll}
+              isLoading={deleting}
+            >
+              Delete All Data
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
