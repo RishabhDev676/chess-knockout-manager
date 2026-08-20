@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   });
 
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zplwxcrerblnrgkaxexz.supabase.co').trim();
-  const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key').trim();
+  const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_8uW6ovq5jeR0-ybo2-8Rxw_bBnchh8H').trim();
 
   if (!supabaseUrl || !supabaseAnonKey || supabaseAnonKey.includes('placeholder')) {
     return supabaseResponse;
