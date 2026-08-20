@@ -22,6 +22,8 @@ const COMMON_HEADER_TERMS = [
   's.no',
   'no',
   'id',
+  'sl no',
+  'sl. no',
 ];
 
 export async function parseExcelFile(file: File): Promise<ParseExcelResult> {
@@ -57,19 +59,17 @@ export async function parseExcelFile(file: File): Promise<ParseExcelResult> {
           const row = rows[rowIndex];
           if (!row || !Array.isArray(row) || row.length === 0) continue;
 
-          // Find first non-empty cell in row
-          let nameCell = '';
-          for (let col = 0; col < row.length; col++) {
-            const val = String(row[col] || '').trim();
-            if (val.length > 0) {
-              nameCell = val;
-              break;
-            }
+          // Target Column A (row[0]) strictly for player names
+          let nameCell = String(row[0] || '').trim();
+
+          // If Column A contains a serial number (e.g. "1", "2.", "3"), check Column B (row[1])
+          if (/^\d+\.?$/.test(nameCell) && row.length > 1) {
+            nameCell = String(row[1] || '').trim();
           }
 
           if (!nameCell) continue;
 
-          // Check if first row is a header
+          // Check if row is a header row (e.g., "Player Name", "Participants", etc.)
           if (rowIndex === 0) {
             const lowerCell = nameCell.toLowerCase();
             if (COMMON_HEADER_TERMS.includes(lowerCell)) {
