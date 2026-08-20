@@ -13,7 +13,6 @@ interface SwapPlayerModalProps {
   targetMatch: Match;
   allMatches: Match[];
   onSuccess: () => Promise<void>;
-  livePlayerIds?: Set<string>;
   initialSlot?: 'player1' | 'player2';
   tournamentId?: string;
 }
@@ -24,7 +23,6 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
   targetMatch,
   allMatches,
   onSuccess,
-  livePlayerIds,
   initialSlot = 'player1',
   tournamentId,
 }) => {
@@ -54,13 +52,10 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
   const p1 = targetMatch.player1;
   const p2 = targetMatch.player2;
 
-  // Strictly filter pending matches (excluding matches that are completed, BYEs, have winners, or players actively playing)
+  // The event head can rearrange every unfinished board. Completed games remain
+  // protected so their result history is never changed by a pairing edit.
   const otherPendingMatches = allMatches.filter((m) => {
     if (m.id === targetMatch.id || m.status !== 'pending' || m.is_bye || m.winner_id) return false;
-    if (livePlayerIds && livePlayerIds.size > 0) {
-      if (m.player1_id && livePlayerIds.has(m.player1_id)) return false;
-      if (m.player2_id && livePlayerIds.has(m.player2_id)) return false;
-    }
     return true;
   });
 
@@ -275,6 +270,9 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
                 Click a Candidate Player to Switch ({filteredSwapMatches.length * 2} Players Available):
               </label>
+              <p className="mb-2 text-[11px] text-slate-500">
+                Every unfinished board is available, including boards already in the current iteration.
+              </p>
               <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-2 space-y-1.5">
                 {filteredSwapMatches.length === 0 ? (
                   <div className="text-center py-6 text-slate-500 text-xs">

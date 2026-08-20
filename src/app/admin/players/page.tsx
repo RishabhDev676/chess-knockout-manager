@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ExcelUpload } from '../../../components/admin/ExcelUpload';
+import { ManualPlayerSetup } from '../../../components/admin/ManualPlayerSetup';
 import { ExtractedPlayer } from '../../../lib/types';
 import { createTournament } from '../../../lib/tournament/actions';
 import { Users, AlertTriangle } from 'lucide-react';
@@ -30,16 +30,16 @@ export default function AdminPlayersPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="mx-auto max-w-2xl space-y-6">
       <div className="border-b border-slate-800 pb-4">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
           <Users className="w-4 h-4" /> STEP 1: PLAYER SETUP
         </div>
         <h1 className="text-3xl font-black text-slate-100 mt-1">
-          Excel Upload & Player Extraction
+          Create Player List
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Upload an Excel file containing player names. The system will randomize pairings for Round 1 automatically.
+          Enter player names manually. You can add names one by one or paste a list from your phone.
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export default function AdminPlayersPage() {
         </div>
       )}
 
-      <ExcelUpload
+      <ManualPlayerSetup
         onConfirmPlayers={handleConfirmPlayers}
         isLoading={loading}
       />

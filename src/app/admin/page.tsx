@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
             <div className="text-3xl font-black font-mono text-slate-100">
               {players.length}
             </div>
-            <p className="text-[11px] text-slate-500">Loaded from Excel</p>
+            <p className="text-[11px] text-slate-500">Entered manually</p>
           </div>
 
           <div className="rounded-2xl bg-slate-900 border border-slate-800 p-5 space-y-1">
@@ -160,10 +160,10 @@ export default function AdminDashboardPage() {
           </div>
           <div>
             <h3 className="text-lg font-bold text-slate-100 group-hover:text-amber-400 transition-colors">
-              Manage Players & Excel Upload
+              Manage Players
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              Upload player .xlsx file, confirm player list, and randomize Round 1.
+              Add player names manually, confirm the list, and create Round 1 pairings.
             </p>
           </div>
         </Link>

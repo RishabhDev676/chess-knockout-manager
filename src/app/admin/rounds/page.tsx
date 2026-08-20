@@ -24,7 +24,6 @@ import {
   groupMatchesByIteration,
   filterMatchesBySearch,
   getIterationForBoard,
-  getLivePlayerIdsFromMatches,
 } from '../../../lib/tournament/iteration';
 import { PlayCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
@@ -206,7 +205,7 @@ export default function AdminRoundsPage() {
         </div>
         <h2 className="text-xl font-bold text-slate-100">No Active Tournament</h2>
         <p className="text-xs text-slate-400 max-w-sm mx-auto">
-          Please upload an Excel file to start a tournament first.
+          Create a tournament and add players manually before starting the first round.
         </p>
         <Link href="/admin/players">
           <Button variant="primary" size="md">
@@ -223,9 +222,6 @@ export default function AdminRoundsPage() {
   const isTournamentComplete = tournament.status === 'complete';
   const champion = tournament.winner || players.find((p) => p.id === tournament.winner_id) || null;
   const runnerUp = tournament.runner_up || players.find((p) => p.id === tournament.runner_up_id) || null;
-
-  // Compute live active player IDs currently playing in started iterations
-  const livePlayerIds = getLivePlayerIdsFromMatches(rawMatches, capacity, startedIterations);
 
   // Filter matches by Search
   const searchedMatches = filterMatchesBySearch(rawMatches, searchQuery);
@@ -429,7 +425,6 @@ export default function AdminRoundsPage() {
           initialSlot={matchToManage.slot || 'player1'}
           tournamentId={tournament?.id}
           allMatches={rawMatches}
-          livePlayerIds={livePlayerIds}
           onSuccess={async () => {
             await loadData();
           }}

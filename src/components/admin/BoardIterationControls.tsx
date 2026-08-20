@@ -221,7 +221,7 @@ export const BoardIterationControls: React.FC<BoardIterationControlsProps> = ({
                   </div>
                   <div className="text-[11px] text-slate-400">
                     {currentGroup.status === 'live'
-                      ? '⚡ Iteration in progress. Active player names are locked to physical boards.'
+                      ? '⚡ Iteration in progress. You can still edit any unfinished pairing if needed.'
                       : currentGroup.status === 'complete'
                       ? '✓ All boards in this iteration are completed.'
                       : 'Pending start. Confirm when players take their seats at the boards.'}
