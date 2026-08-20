@@ -14,6 +14,7 @@ interface SwapPlayerModalProps {
   allMatches: Match[];
   onSuccess: () => Promise<void>;
   livePlayerIds?: Set<string>;
+  initialSlot?: 'player1' | 'player2';
 }
 
 export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
@@ -23,6 +24,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
   allMatches,
   onSuccess,
   livePlayerIds,
+  initialSlot = 'player1',
 }) => {
   const [activeTab, setActiveTab] = useState<'swap-player' | 'absent' | 'shift-board'>('swap-player');
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
   );
 
   // Tab 2: Swap Player State
-  const [selectedSlot, setSelectedSlot] = useState<'player1' | 'player2'>('player1');
+  const [selectedSlot, setSelectedSlot] = useState<'player1' | 'player2'>(initialSlot);
   const [selectedOtherMatchId, setSelectedOtherMatchId] = useState<string>('');
   const [selectedOtherSlot, setSelectedOtherSlot] = useState<'player1' | 'player2'>('player1');
 
@@ -69,7 +71,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
 
   const handleResetSelections = () => {
     setAbsentPlayerId(targetMatch.player1?.id || '');
-    setSelectedSlot('player1');
+    setSelectedSlot(initialSlot);
     setSelectedOtherMatchId('');
     setSelectedOtherSlot('player1');
     setSelectedBoardMatchId('');
@@ -99,7 +101,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
 
         await markPlayerAbsentForfeit(targetMatch.id, absentPlayerId, presentId);
       } else if (activeTab === 'swap-player') {
-        if (!selectedOtherMatchId) throw new Error('Please select a target match to swap player with.');
+        if (!selectedOtherMatchId) throw new Error('Please select a target player to switch with.');
         await swapMatchPlayers(targetMatch.id, selectedSlot, selectedOtherMatchId, selectedOtherSlot);
       } else if (activeTab === 'shift-board') {
         if (!selectedBoardMatchId) throw new Error('Please select a board match to swap positions with.');
@@ -119,7 +121,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Manage Board ${targetMatch.board_number}: ${p1?.name || 'P1'} vs ${p2?.name || 'P2'}`}
+      title={`Switch Player on Board ${targetMatch.board_number}: ${p1?.name || 'P1'} vs ${p2?.name || 'P2'}`}
     >
       <div className="space-y-5">
         {/* Navigation Tabs */}
@@ -133,7 +135,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
             }`}
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            Swap Players
+            Switch Player
           </button>
           <button
             onClick={() => setActiveTab('absent')}
@@ -170,7 +172,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
         <div className="flex items-center justify-between pt-1">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             {activeTab === 'swap-player'
-              ? 'Swap Player Pairings'
+              ? 'Direct Player Switch'
               : activeTab === 'absent'
               ? 'Mark Forfeit'
               : 'Rearrange Board Order'}
@@ -184,17 +186,46 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
           </button>
         </div>
 
-        {/* Tab 2: Swap Players (Default Tab) */}
+        {/* Tab 2: Switch Player (Default Tab) */}
         {activeTab === 'swap-player' && (
           <div className="space-y-4">
-            <p className="text-xs text-slate-300">
-              Swap an unavailable player from this match with an available pending player from another match.
-            </p>
+            {/* Slot Selector Banner */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                Select Which Player on Board {targetMatch.board_number} to Switch:
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedSlot('player1')}
+                  className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all ${
+                    selectedSlot === 'player1'
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="text-[10px] text-slate-500">Player 1</div>
+                  <div className="truncate text-sm">{p1?.name || 'P1'}</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSlot('player2')}
+                  className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all ${
+                    selectedSlot === 'player2'
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="text-[10px] text-slate-500">Player 2</div>
+                  <div className="truncate text-sm">{p2?.name || 'P2'}</div>
+                </button>
+              </div>
+            </div>
 
             {/* Search Input in Swap Modal */}
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                Search Pending Players / Boards to Swap With:
+                Search Player to Switch With:
               </label>
               <div className="relative">
                 <Search className="w-4 h-4 text-amber-400 absolute left-3 top-2.5 pointer-events-none" />
@@ -203,12 +234,12 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
                   value={swapSearchQuery}
                   onChange={(e) => setSwapSearchQuery(e.target.value)}
                   placeholder="Type player name or board number (e.g. Board 3)..."
-                  className="w-full rounded-xl bg-slate-950 border border-slate-800 pl-9 pr-8 py-2 text-xs text-slate-100 placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+                  className="w-full rounded-xl bg-slate-950 border border-slate-800 pl-9 pr-8 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-amber-500 focus:outline-none"
                 />
                 {swapSearchQuery && (
                   <button
                     onClick={() => setSwapSearchQuery('')}
-                    className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-200"
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -216,70 +247,79 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Which Player from Board {targetMatch.board_number}?
-                </label>
-                <select
-                  value={selectedSlot}
-                  onChange={(e) => setSelectedSlot(e.target.value as 'player1' | 'player2')}
-                  className="w-full rounded-xl bg-slate-950 border border-slate-800 p-2.5 text-xs text-slate-100 font-medium focus:border-amber-500 focus:outline-none"
-                >
-                  <option value="player1">P1: {p1?.name || 'Player 1'}</option>
-                  <option value="player2">P2: {p2?.name || 'Player 2'}</option>
-                </select>
-              </div>
+            {/* Candidate Players Cards (1-Click Switch Selector) */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                Click a Candidate Player to Switch ({filteredSwapMatches.length * 2} Players Available):
+              </label>
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-2 space-y-1.5">
+                {filteredSwapMatches.length === 0 ? (
+                  <div className="text-center py-6 text-slate-500 text-xs">
+                    No pending candidate players found.
+                  </div>
+                ) : (
+                  filteredSwapMatches.map((m) => {
+                    const isP1Selected = selectedOtherMatchId === m.id && selectedOtherSlot === 'player1';
+                    const isP2Selected = selectedOtherMatchId === m.id && selectedOtherSlot === 'player2';
 
-              <div>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Swap With Match:
-                </label>
-                <select
-                  value={selectedOtherMatchId}
-                  onChange={(e) => setSelectedOtherMatchId(e.target.value)}
-                  className="w-full rounded-xl bg-slate-950 border border-slate-800 p-2.5 text-xs text-slate-100 font-medium focus:border-amber-500 focus:outline-none"
-                >
-                  <option value="">-- Select Pending Match ({filteredSwapMatches.length}) --</option>
-                  {filteredSwapMatches.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      Board {m.board_number}: {m.player1?.name || 'P1'} vs {m.player2?.name || 'P2'}
-                    </option>
-                  ))}
-                </select>
+                    return (
+                      <div
+                        key={m.id}
+                        className="rounded-lg border border-slate-800/80 bg-slate-900/60 p-2 text-xs flex items-center justify-between gap-2"
+                      >
+                        <span className="font-extrabold text-amber-400 text-[10px] w-14 shrink-0">
+                          BOARD {m.board_number}
+                        </span>
+
+                        <div className="flex-1 grid grid-cols-2 gap-2">
+                          {m.player1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedOtherMatchId(m.id);
+                                setSelectedOtherSlot('player1');
+                              }}
+                              className={`px-2.5 py-1.5 rounded-md border text-left font-bold transition-all truncate flex items-center justify-between ${
+                                isP1Selected
+                                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md'
+                                  : 'bg-slate-950 border-slate-800 text-slate-200 hover:border-amber-500/50 hover:bg-slate-850'
+                              }`}
+                            >
+                              <span className="truncate">{m.player1.name}</span>
+                              {isP1Selected && <span className="text-[9px] font-black uppercase ml-1">✓</span>}
+                            </button>
+                          )}
+
+                          {m.player2 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedOtherMatchId(m.id);
+                                setSelectedOtherSlot('player2');
+                              }}
+                              className={`px-2.5 py-1.5 rounded-md border text-left font-bold transition-all truncate flex items-center justify-between ${
+                                isP2Selected
+                                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md'
+                                  : 'bg-slate-950 border-slate-800 text-slate-200 hover:border-amber-500/50 hover:bg-slate-850'
+                              }`}
+                            >
+                              <span className="truncate">{m.player2.name}</span>
+                              {isP2Selected && <span className="text-[9px] font-black uppercase ml-1">✓</span>}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
-
-            {selectedOtherMatchId && (
-              <div>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Which Player from the other match?
-                </label>
-                {(() => {
-                  const otherMatch = otherPendingMatches.find((m) => m.id === selectedOtherMatchId);
-                  return (
-                    <select
-                      value={selectedOtherSlot}
-                      onChange={(e) => setSelectedOtherSlot(e.target.value as 'player1' | 'player2')}
-                      className="w-full rounded-xl bg-slate-950 border border-slate-800 p-2.5 text-xs text-slate-100 font-medium focus:border-amber-500 focus:outline-none"
-                    >
-                      <option value="player1">
-                        P1: {otherMatch?.player1?.name || 'Player 1'}
-                      </option>
-                      <option value="player2">
-                        P2: {otherMatch?.player2?.name || 'Player 2'}
-                      </option>
-                    </select>
-                  );
-                })()}
-              </div>
-            )}
 
             {/* LIVE SWAP PREVIEW BANNER */}
             {selectedOtherMatch && playerA && playerB && (
               <div className="rounded-xl bg-amber-950/40 border border-amber-500/40 p-3.5 space-y-2">
                 <div className="text-[11px] font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5" /> LIVE SWAP PREVIEW
+                  <RefreshCw className="w-3.5 h-3.5" /> LIVE SWITCH PREVIEW
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-slate-100 font-bold text-xs">
                   <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-0.5">

@@ -9,7 +9,7 @@ interface MatchCardProps {
   match: Match;
   onSelectWinner: (match: Match, winnerId: string, winnerName: string, loserId: string | null, loserName: string | null) => void;
   onEditResult?: (match: Match) => void;
-  onManageMatch?: (match: Match) => void;
+  onManageMatch?: (match: Match, targetSlot?: 'player1' | 'player2') => void;
   iterationTag?: string;
   isReadOnly?: boolean;
   compact?: boolean;
@@ -76,15 +76,26 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                   : 'bg-slate-950 text-slate-100'
               }`}
             >
-              <span className="truncate max-w-[130px] sm:max-w-[160px]">{p1?.name || 'P1'}</span>
-              {!isComplete && !isReadOnly && p1 && p2 && (
-                <button
-                  onClick={() => onSelectWinner(match, p1.id, p1.name, p2.id, p2.name)}
-                  className="rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-1 shrink-0 ml-1"
-                >
-                  WIN
-                </button>
-              )}
+              <span className="truncate max-w-[110px] sm:max-w-[140px]">{p1?.name || 'P1'}</span>
+              <div className="flex items-center gap-1 shrink-0 ml-1">
+                {!isComplete && !isReadOnly && onManageMatch && (
+                  <button
+                    onClick={() => onManageMatch(match, 'player1')}
+                    title="Switch Player 1"
+                    className="rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-[9px] px-1.5 py-0.5"
+                  >
+                    Switch
+                  </button>
+                )}
+                {!isComplete && !isReadOnly && p1 && p2 && (
+                  <button
+                    onClick={() => onSelectWinner(match, p1.id, p1.name, p2.id, p2.name)}
+                    className="rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-1"
+                  >
+                    WIN
+                  </button>
+                )}
+              </div>
               {p1IsWinner && <Trophy className="w-3.5 h-3.5 text-emerald-400 shrink-0 ml-1" />}
             </div>
 
@@ -97,15 +108,26 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                   : 'bg-slate-950 text-slate-100'
               }`}
             >
-              <span className="truncate max-w-[130px] sm:max-w-[160px]">{p2?.name || 'P2'}</span>
-              {!isComplete && !isReadOnly && p1 && p2 && (
-                <button
-                  onClick={() => onSelectWinner(match, p2.id, p2.name, p1.id, p1.name)}
-                  className="rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-1 shrink-0 ml-1"
-                >
-                  WIN
-                </button>
-              )}
+              <span className="truncate max-w-[110px] sm:max-w-[140px]">{p2?.name || 'P2'}</span>
+              <div className="flex items-center gap-1 shrink-0 ml-1">
+                {!isComplete && !isReadOnly && onManageMatch && (
+                  <button
+                    onClick={() => onManageMatch(match, 'player2')}
+                    title="Switch Player 2"
+                    className="rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-[9px] px-1.5 py-0.5"
+                  >
+                    Switch
+                  </button>
+                )}
+                {!isComplete && !isReadOnly && p1 && p2 && (
+                  <button
+                    onClick={() => onSelectWinner(match, p2.id, p2.name, p1.id, p1.name)}
+                    className="rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-1"
+                  >
+                    WIN
+                  </button>
+                )}
+              </div>
               {p2IsWinner && <Trophy className="w-3.5 h-3.5 text-emerald-400 shrink-0 ml-1" />}
             </div>
 
@@ -116,7 +138,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                     onClick={() => onManageMatch(match)}
                     className="w-full flex items-center justify-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-1 rounded-md transition-all active:scale-95"
                   >
-                    <RefreshCw className="w-3 h-3" /> Swap / Manage
+                    <RefreshCw className="w-3 h-3" /> Board Options
                   </button>
                 )}
                 {isComplete && onEditResult && (
@@ -210,19 +232,31 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                 </div>
               </div>
 
-              {!isComplete && !isReadOnly && p1 && p2 && (
-                <button
-                  onClick={() => onSelectWinner(match, p1.id, p1.name, p2.id, p2.name)}
-                  className="rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold text-xs px-3.5 py-2 transition-all active:scale-95 shadow-md shadow-amber-600/20"
-                >
-                  {p1.name} WON
-                </button>
-              )}
-              {p1IsWinner && (
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
-                  ✓ Winner
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {!isComplete && !isReadOnly && onManageMatch && (
+                  <button
+                    onClick={() => onManageMatch(match, 'player1')}
+                    title="Switch Player 1 with another player"
+                    className="flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
+                  >
+                    <RefreshCw className="w-3 h-3 text-amber-400" /> Switch
+                  </button>
+                )}
+
+                {!isComplete && !isReadOnly && p1 && p2 && (
+                  <button
+                    onClick={() => onSelectWinner(match, p1.id, p1.name, p2.id, p2.name)}
+                    className="rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold text-xs px-3.5 py-2 transition-all active:scale-95 shadow-md shadow-amber-600/20"
+                  >
+                    {p1.name} WON
+                  </button>
+                )}
+                {p1IsWinner && (
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+                    ✓ Winner
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* VS Divider */}
@@ -256,19 +290,31 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                 </div>
               </div>
 
-              {!isComplete && !isReadOnly && p1 && p2 && (
-                <button
-                  onClick={() => onSelectWinner(match, p2.id, p2.name, p1.id, p1.name)}
-                  className="rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold text-xs px-3.5 py-2 transition-all active:scale-95 shadow-md shadow-amber-600/20"
-                >
-                  {p2.name} WON
-                </button>
-              )}
-              {p2IsWinner && (
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
-                  ✓ Winner
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {!isComplete && !isReadOnly && onManageMatch && (
+                  <button
+                    onClick={() => onManageMatch(match, 'player2')}
+                    title="Switch Player 2 with another player"
+                    className="flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 px-2.5 py-1.5 rounded-lg transition-all active:scale-95"
+                  >
+                    <RefreshCw className="w-3 h-3 text-amber-400" /> Switch
+                  </button>
+                )}
+
+                {!isComplete && !isReadOnly && p1 && p2 && (
+                  <button
+                    onClick={() => onSelectWinner(match, p2.id, p2.name, p1.id, p1.name)}
+                    className="rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold text-xs px-3.5 py-2 transition-all active:scale-95 shadow-md shadow-amber-600/20"
+                  >
+                    {p2.name} WON
+                  </button>
+                )}
+                {p2IsWinner && (
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+                    ✓ Winner
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -285,7 +331,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                   onClick={() => onManageMatch(match)}
                   className="flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 px-3 py-1.5 rounded-xl shadow-sm transition-all active:scale-95"
                 >
-                  <RefreshCw className="w-3.5 h-3.5 text-amber-400" /> Swap / Manage Board
+                  <RefreshCw className="w-3.5 h-3.5 text-amber-400" /> Board Options
                 </button>
               )}
               {isComplete && !isBye && onEditResult && (

@@ -59,7 +59,7 @@ export default function AdminRoundsPage() {
   // Modal states
   const [selectedWinner, setSelectedWinner] = useState<SelectedWinnerState | null>(null);
   const [matchToReset, setMatchToReset] = useState<Match | null>(null);
-  const [matchToManage, setMatchToManage] = useState<Match | null>(null);
+  const [matchToManage, setMatchToManage] = useState<{ match: Match; slot?: 'player1' | 'player2' } | null>(null);
 
   const loadData = async () => {
     try {
@@ -347,7 +347,7 @@ export default function AdminRoundsPage() {
                       handleOpenConfirmWinner(m, wId, wName, lId, lName)
                     }
                     onEditResult={(m) => setMatchToReset(m)}
-                    onManageMatch={(m) => setMatchToManage(m)}
+                    onManageMatch={(m, slot) => setMatchToManage({ match: m, slot })}
                     compact={viewMode === 'compact-grid'}
                   />
                 );
@@ -408,7 +408,8 @@ export default function AdminRoundsPage() {
         <SwapPlayerModal
           isOpen={Boolean(matchToManage)}
           onClose={() => setMatchToManage(null)}
-          targetMatch={matchToManage}
+          targetMatch={matchToManage.match}
+          initialSlot={matchToManage.slot || 'player1'}
           allMatches={rawMatches}
           livePlayerIds={livePlayerIds}
           onSuccess={async () => {
