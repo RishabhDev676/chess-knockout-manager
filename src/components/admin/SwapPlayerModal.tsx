@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Match } from '../../lib/types';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { UserX, RefreshCw, MoveHorizontal, AlertCircle } from 'lucide-react';
+import { UserX, RefreshCw, MoveHorizontal, AlertCircle, RotateCcw } from 'lucide-react';
 import { markPlayerAbsentForfeit, swapMatchPlayers, swapBoardNumbers } from '../../lib/tournament/actions';
 
 interface SwapPlayerModalProps {
@@ -46,6 +46,15 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
   const otherPendingMatches = allMatches.filter(
     (m) => m.id !== targetMatch.id && m.status === 'pending' && !m.is_bye
   );
+
+  const handleResetSelections = () => {
+    setAbsentPlayerId(targetMatch.player1?.id || '');
+    setSelectedSlot('player1');
+    setSelectedOtherMatchId('');
+    setSelectedOtherSlot('player1');
+    setSelectedBoardMatchId('');
+    setErrorMsg(null);
+  };
 
   // Handle Action Submit
   const handleConfirmAction = async () => {
@@ -127,6 +136,24 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
           </div>
         )}
 
+        {/* Tab Header with Clear Selection Button */}
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            {activeTab === 'absent'
+              ? 'Mark Forfeit'
+              : activeTab === 'swap-player'
+              ? 'Swap Player Pairings'
+              : 'Rearrange Board Order'}
+          </span>
+          <button
+            type="button"
+            onClick={handleResetSelections}
+            className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-amber-400 transition-colors"
+          >
+            <RotateCcw className="w-3 h-3 text-amber-400" /> Clear Selection
+          </button>
+        </div>
+
         {/* Tab 1: Absent Forfeit */}
         {activeTab === 'absent' && (
           <div className="space-y-4">
@@ -171,11 +198,13 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
             </div>
 
             {absentPlayerId && (
-              <div className="rounded-xl bg-slate-950 p-3 border border-slate-800 text-xs text-amber-400">
-                ⚡ Winner by forfeit will be:{' '}
-                <strong>
-                  {absentPlayerId === p1?.id ? p2?.name : p1?.name}
-                </strong>
+              <div className="rounded-xl bg-slate-950 p-3 border border-slate-800 text-xs text-amber-400 flex items-center justify-between">
+                <div>
+                  ⚡ Winner by forfeit will be:{' '}
+                  <strong>
+                    {absentPlayerId === p1?.id ? p2?.name : p1?.name}
+                  </strong>
+                </div>
               </div>
             )}
           </div>
@@ -277,21 +306,27 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
         )}
 
         {/* Footer Actions */}
-        <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
-          <Button variant="ghost" onClick={onClose} disabled={loading}>
-            Cancel
+        <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+          <Button variant="ghost" onClick={handleResetSelections} size="sm" className="text-slate-400 hover:text-white">
+            <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset Choices
           </Button>
-          <Button
-            variant={activeTab === 'absent' ? 'danger' : 'primary'}
-            onClick={handleConfirmAction}
-            isLoading={loading}
-          >
-            {activeTab === 'absent'
-              ? 'Confirm Absence Forfeit'
-              : activeTab === 'swap-player'
-              ? 'Confirm Player Swap'
-              : 'Confirm Board Shift'}
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={onClose} disabled={loading}>
+              Cancel
+            </Button>
+            <Button
+              variant={activeTab === 'absent' ? 'danger' : 'primary'}
+              onClick={handleConfirmAction}
+              isLoading={loading}
+            >
+              {activeTab === 'absent'
+                ? 'Confirm Absence Forfeit'
+                : activeTab === 'swap-player'
+                ? 'Confirm Player Swap'
+                : 'Confirm Board Shift'}
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>

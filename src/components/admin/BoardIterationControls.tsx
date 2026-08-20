@@ -101,9 +101,22 @@ export const BoardIterationControls: React.FC<BoardIterationControlsProps> = ({
               <Layers className="w-3.5 h-3.5" />
               Round Iterations ({iterationGroups.length} Batches)
             </span>
-            <span className="text-[11px] text-slate-400 font-medium">
-              Showing {filteredMatchesCount} of {totalMatches} matches
-            </span>
+            <div className="flex items-center gap-3">
+              {(selectedIteration !== 'all' || searchQuery) && (
+                <button
+                  onClick={() => {
+                    onSearchChange('');
+                    onSelectIteration('all');
+                  }}
+                  className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md transition-all"
+                >
+                  <X className="w-3 h-3" /> Clear All Filters
+                </button>
+              )}
+              <span className="text-[11px] text-slate-400 font-medium">
+                Showing {filteredMatchesCount} of {totalMatches} matches
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">

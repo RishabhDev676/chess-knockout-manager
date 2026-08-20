@@ -342,13 +342,13 @@ export default function AdminRoundsPage() {
         <Modal
           isOpen={Boolean(matchToReset)}
           onClose={() => setMatchToReset(null)}
-          title="Edit Match Result"
+          title="Clear & Reset Match Result"
         >
           <div className="space-y-4">
             <p className="text-xs text-slate-300 leading-relaxed">
-              Are you sure you want to reset Board{' '}
+              Are you sure you want to clear the result for Board{' '}
               <strong className="text-amber-400">{matchToReset.board_number}</strong>?
-              This will unlock the match and allow you to pick a different winner.
+              This will clear the recorded winner and set the match status back to pending.
             </p>
             <div className="flex justify-end gap-3 pt-2">
               <Button
@@ -363,7 +363,7 @@ export default function AdminRoundsPage() {
                 onClick={handleConfirmResetMatch}
                 isLoading={actionLoading}
               >
-                Reset Match Result
+                Clear & Reset Result
               </Button>
             </div>
           </div>
