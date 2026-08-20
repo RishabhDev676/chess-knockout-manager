@@ -292,7 +292,7 @@ export async function generateNextRoundForTournament(
 
   // 5. Generate next round pairings
   const nextRoundNumber = activeRound.round_number + 1;
-  const { roundName, pairings } = generateNextRoundPairings(winnerIds);
+  const { roundName, pairings } = generateNextRoundPairings(winnerIds, nextRoundNumber);
 
   // 6. Insert new Round row
   const { data: newRound, error: rErr } = await supabase

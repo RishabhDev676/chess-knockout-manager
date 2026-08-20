@@ -25,31 +25,20 @@ export function fisherYatesShuffle<T>(array: T[]): T[] {
 }
 
 /**
- * Returns the nearest power of 2 <= n (e.g. 10 -> 8, 14 -> 8, 18 -> 16, 25 -> 16, 16 -> 16)
+ * Calculates appropriate round name based on player count and round number
  */
-export function getNearestLowerPowerOf2(n: number): number {
-  if (n < 2) return 1;
-  let p = 1;
-  while (p * 2 <= n) {
-    p *= 2;
-  }
-  return p;
-}
-
-/**
- * Calculates appropriate round name based on player count and round context
- */
-export function getRoundName(playerCount: number, isPrelim: boolean = false): string {
-  if (isPrelim) {
-    return 'Preliminary Round';
-  }
+export function getRoundName(playerCount: number, roundNumber: number = 1): string {
   if (playerCount === 2) return 'Final';
   if (playerCount === 4) return 'Semifinals';
   if (playerCount === 8) return 'Quarterfinals';
   if (playerCount === 16) return 'Round of 16';
   if (playerCount === 32) return 'Round of 32';
   if (playerCount === 64) return 'Round of 64';
-  return `Round of ${playerCount}`;
+  
+  if (roundNumber === 1) {
+    return `Round 1 (${playerCount} Players)`;
+  }
+  return `Round ${roundNumber} (${playerCount} Players)`;
 }
 
 export interface MatchPairing {
@@ -62,104 +51,75 @@ export interface MatchPairing {
 }
 
 /**
+ * Generates match pairings for any round using unbiased Fisher-Yates random shuffle.
+ * - If player count is EVEN (e.g. 10, 14, 16, 18, 20, 32): Every single player is paired into a board (NO BYES).
+ * - If player count is ODD (e.g. 11, 15, 25, 5, 3): Exactly 1 remaining player receives a Bye to advance.
+ */
+export function generatePairingsForPlayers(
+  playerIds: string[],
+  roundNumber: number = 1
+): {
+  roundName: string;
+  pairings: MatchPairing[];
+} {
+  const shuffled = fisherYatesShuffle(playerIds);
+  const n = shuffled.length;
+  const roundName = getRoundName(n, roundNumber);
+
+  const pairings: MatchPairing[] = [];
+  let board = 1;
+
+  for (let i = 0; i < n; i += 2) {
+    const p1 = shuffled[i];
+    const p2 = shuffled[i + 1] || null;
+
+    if (p2) {
+      // Standard match: 2 players paired randomly
+      pairings.push({
+        board_number: board++,
+        player1_id: p1,
+        player2_id: p2,
+        winner_id: null,
+        is_bye: false,
+        status: 'pending',
+      });
+    } else {
+      // Odd player count: single remaining player gets a Bye
+      pairings.push({
+        board_number: board++,
+        player1_id: p1,
+        player2_id: null,
+        winner_id: p1,
+        is_bye: true,
+        status: 'complete',
+      });
+    }
+  }
+
+  return { roundName, pairings };
+}
+
+/**
  * Generates initial round match pairings given a list of player IDs.
- * Handles non-power-of-2 by creating a Preliminary Round with automatic byes.
  */
 export function generateInitialPairings(playerIds: string[]): {
   roundName: string;
   pairings: MatchPairing[];
   isPrelim: boolean;
 } {
-  const shuffled = fisherYatesShuffle(playerIds);
-  const n = shuffled.length;
-  const targetLower = getNearestLowerPowerOf2(n);
-
-  if (n === targetLower) {
-    // Exact power of 2
-    const roundName = getRoundName(n, false);
-    const pairings: MatchPairing[] = [];
-    let board = 1;
-
-    for (let i = 0; i < n; i += 2) {
-      pairings.push({
-        board_number: board++,
-        player1_id: shuffled[i],
-        player2_id: shuffled[i + 1],
-        winner_id: null,
-        is_bye: false,
-        status: 'pending',
-      });
-    }
-
-    return { roundName, pairings, isPrelim: false };
-  }
-
-  // Non-power of 2: Create Preliminary Round
-  const prelimMatches = n - targetLower; // Number of active matches
-  const prelimPlayersCount = prelimMatches * 2; // Players playing in prelim
-  const byePlayersCount = n - prelimPlayersCount; // Players getting byes
-
-  const prelimPlayers = shuffled.slice(0, prelimPlayersCount);
-  const byePlayers = shuffled.slice(prelimPlayersCount);
-
-  const pairings: MatchPairing[] = [];
-  let board = 1;
-
-  // Active preliminary matches
-  for (let i = 0; i < prelimPlayers.length; i += 2) {
-    pairings.push({
-      board_number: board++,
-      player1_id: prelimPlayers[i],
-      player2_id: prelimPlayers[i + 1],
-      winner_id: null,
-      is_bye: false,
-      status: 'pending',
-    });
-  }
-
-  // Bye matches (auto-completed)
-  for (const byePlayerId of byePlayers) {
-    pairings.push({
-      board_number: board++,
-      player1_id: byePlayerId,
-      player2_id: null,
-      winner_id: byePlayerId,
-      is_bye: true,
-      status: 'complete',
-    });
-  }
-
-  return {
-    roundName: 'Preliminary Round',
-    pairings,
-    isPrelim: true,
-  };
+  const { roundName, pairings } = generatePairingsForPlayers(playerIds, 1);
+  return { roundName, pairings, isPrelim: false };
 }
 
 /**
- * Generates next round pairings from winners of previous round
+ * Generates next round pairings from winners of previous round.
  */
-export function generateNextRoundPairings(winnerIds: string[]): {
+export function generateNextRoundPairings(
+  winnerIds: string[],
+  nextRoundNumber: number = 2
+): {
   roundName: string;
   pairings: MatchPairing[];
 } {
-  const shuffled = fisherYatesShuffle(winnerIds);
-  const n = shuffled.length;
-  const roundName = getRoundName(n, false);
-
-  const pairings: MatchPairing[] = [];
-  let board = 1;
-
-  for (let i = 0; i < n; i += 2) {
-    pairings.push({
-      board_number: board++,
-      player1_id: shuffled[i],
-      player2_id: shuffled[i + 1] || null,
-      winner_id: shuffled[i + 1] ? null : shuffled[i],
-      is_bye: !shuffled[i + 1],
-      status: shuffled[i + 1] ? 'pending' : 'complete',
-    });
-  }
-
-  return { roundName, pairings };
+  return generatePairingsForPlayers(winnerIds, nextRoundNumber);
 }
