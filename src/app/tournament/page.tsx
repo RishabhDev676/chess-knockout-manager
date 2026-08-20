@@ -5,6 +5,8 @@ import { fetchActiveTournament } from '../../lib/tournament/actions';
 import { Tournament, Round, Player } from '../../lib/types';
 import { LiveRound } from '../../components/public/LiveRound';
 import { ChampionBanner } from '../../components/public/ChampionBanner';
+import { OrientationToggle } from '../../components/ui/OrientationToggle';
+import { useScreenOrientation, ViewOrientation, getRecommendedViewMode } from '../../lib/orientation';
 import { createClient } from '../../lib/supabase/client';
 import { Trophy, RefreshCw, Layers } from 'lucide-react';
 import { MatchCard } from '../../components/admin/MatchCard';
@@ -16,6 +18,10 @@ export default function PublicTournamentPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<string>('');
+
+  const { orientation, width } = useScreenOrientation();
+  const [viewMode, setViewMode] = useState<ViewOrientation>('vertical');
+  const [hasManuallySetView, setHasManuallySetView] = useState(false);
 
   const loadData = async () => {
     try {
@@ -66,6 +72,23 @@ export default function PublicTournamentPage() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Auto-adapt view mode on screen orientation change if user hasn't explicitly toggled
+  useEffect(() => {
+    if (!hasManuallySetView && currentRound) {
+      const recommended = getRecommendedViewMode(
+        orientation,
+        width,
+        currentRound.matches?.length || 0
+      );
+      setViewMode(recommended);
+    }
+  }, [orientation, width, currentRound, hasManuallySetView]);
+
+  const handleUserChangeViewMode = (mode: ViewOrientation) => {
+    setViewMode(mode);
+    setHasManuallySetView(true);
+  };
 
   if (loading) {
     return (
@@ -143,13 +166,27 @@ export default function PublicTournamentPage() {
         />
       )}
 
+      {/* Orientation & View Selector Controls */}
+      <OrientationToggle
+        currentView={viewMode}
+        onChangeView={handleUserChangeViewMode}
+        isLandscape={orientation === 'landscape'}
+        matchCount={currentRound?.matches?.length || 0}
+      />
+
       {/* Current Active Round */}
       {currentRound && (
-        <LiveRound round={currentRound} />
+        <LiveRound
+          round={currentRound}
+          allRounds={allRounds}
+          viewMode={viewMode}
+          championName={champion?.name}
+          runnerUpName={runnerUp?.name}
+        />
       )}
 
-      {/* Tournament History (Previous Rounds) */}
-      {previousRounds.length > 0 && (
+      {/* Tournament History (Previous Rounds) - render only if in vertical or compact mode */}
+      {viewMode !== 'horizontal-tree' && previousRounds.length > 0 && (
         <div className="pt-8 border-t border-slate-900 space-y-6">
           <div className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-amber-400" />
@@ -180,13 +217,20 @@ export default function PublicTournamentPage() {
                   </span>
                 </summary>
 
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div
+                  className={`p-6 grid gap-4 ${
+                    viewMode === 'compact-grid'
+                      ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
+                      : 'grid-cols-1 md:grid-cols-2'
+                  }`}
+                >
                   {(pastRound.matches || []).map((m) => (
                     <MatchCard
                       key={m.id}
                       match={m}
                       onSelectWinner={() => {}}
                       isReadOnly
+                      compact={viewMode === 'compact-grid'}
                     />
                   ))}
                 </div>

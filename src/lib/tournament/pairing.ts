@@ -5,6 +5,7 @@ import { Player } from '../types';
  * falling back to Math.random()
  */
 export function fisherYatesShuffle<T>(array: T[]): T[] {
+  if (!array || array.length === 0) return [];
   const result = [...array];
   for (let i = result.length - 1; i > 0; i--) {
     let j: number;
@@ -28,13 +29,15 @@ export function fisherYatesShuffle<T>(array: T[]): T[] {
  * Calculates appropriate round name based on player count and round number
  */
 export function getRoundName(playerCount: number, roundNumber: number = 1): string {
+  if (playerCount <= 1) return 'Winner Declared';
   if (playerCount === 2) return 'Final';
   if (playerCount === 4) return 'Semifinals';
   if (playerCount === 8) return 'Quarterfinals';
   if (playerCount === 16) return 'Round of 16';
   if (playerCount === 32) return 'Round of 32';
   if (playerCount === 64) return 'Round of 64';
-  
+  if (playerCount === 128) return 'Round of 128';
+
   if (roundNumber === 1) {
     return `Round 1 (${playerCount} Players)`;
   }
@@ -52,8 +55,7 @@ export interface MatchPairing {
 
 /**
  * Generates match pairings for any round using unbiased Fisher-Yates random shuffle.
- * - If player count is EVEN (e.g. 10, 14, 16, 18, 20, 32): Every single player is paired into a board (NO BYES).
- * - If player count is ODD (e.g. 11, 15, 25, 5, 3): Exactly 1 remaining player receives a Bye to advance.
+ * Supports all player count orientations (odd, even, 1 player, powers of 2, non-powers of 2 up to 128+).
  */
 export function generatePairingsForPlayers(
   playerIds: string[],
@@ -62,6 +64,13 @@ export function generatePairingsForPlayers(
   roundName: string;
   pairings: MatchPairing[];
 } {
+  if (!playerIds || playerIds.length === 0) {
+    return {
+      roundName: 'No Players',
+      pairings: [],
+    };
+  }
+
   const shuffled = fisherYatesShuffle(playerIds);
   const n = shuffled.length;
   const roundName = getRoundName(n, roundNumber);

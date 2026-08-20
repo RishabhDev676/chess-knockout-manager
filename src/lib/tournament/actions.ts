@@ -248,6 +248,56 @@ export async function resetMatch(matchId: string): Promise<void> {
   }
 }
 
+export async function swapMatchPlayers(
+  match1Id: string,
+  slot1: 'player1' | 'player2',
+  match2Id: string,
+  slot2: 'player1' | 'player2'
+): Promise<void> {
+  const supabase = createClient();
+
+  const { data: match1 } = await supabase.from('matches').select('*').eq('id', match1Id).single();
+  const { data: match2 } = await supabase.from('matches').select('*').eq('id', match2Id).single();
+
+  if (!match1 || !match2) {
+    throw new Error('One or both matches could not be found.');
+  }
+
+  const p1Field = slot1 === 'player1' ? 'player1_id' : 'player2_id';
+  const p2Field = slot2 === 'player1' ? 'player1_id' : 'player2_id';
+
+  const player1Id = match1[p1Field];
+  const player2Id = match2[p2Field];
+
+  await supabase.from('matches').update({ [p1Field]: player2Id }).eq('id', match1Id);
+  await supabase.from('matches').update({ [p2Field]: player1Id }).eq('id', match2Id);
+}
+
+export async function swapBoardNumbers(match1Id: string, match2Id: string): Promise<void> {
+  const supabase = createClient();
+
+  const { data: match1 } = await supabase.from('matches').select('*').eq('id', match1Id).single();
+  const { data: match2 } = await supabase.from('matches').select('*').eq('id', match2Id).single();
+
+  if (!match1 || !match2) {
+    throw new Error('One or both matches could not be found.');
+  }
+
+  const board1 = match1.board_number;
+  const board2 = match2.board_number;
+
+  await supabase.from('matches').update({ board_number: board2 }).eq('id', match1Id);
+  await supabase.from('matches').update({ board_number: board1 }).eq('id', match2Id);
+}
+
+export async function markPlayerAbsentForfeit(
+  matchId: string,
+  absentPlayerId: string,
+  presentPlayerId: string
+): Promise<void> {
+  await setMatchWinner(matchId, presentPlayerId, absentPlayerId);
+}
+
 export async function generateNextRoundForTournament(
   tournamentId: string
 ): Promise<Round> {

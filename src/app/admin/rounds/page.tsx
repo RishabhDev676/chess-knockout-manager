@@ -11,10 +11,21 @@ import { Tournament, Round, Match, Player } from '../../../lib/types';
 import { MatchCard } from '../../../components/admin/MatchCard';
 import { RoundProgress } from '../../../components/admin/RoundProgress';
 import { ResultConfirmModal } from '../../../components/admin/ResultConfirmModal';
+import { BoardIterationControls } from '../../../components/admin/BoardIterationControls';
+import { SwapPlayerModal } from '../../../components/admin/SwapPlayerModal';
 import { ChampionBanner } from '../../../components/public/ChampionBanner';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
-import { Trophy, PlayCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import { OrientationToggle } from '../../../components/ui/OrientationToggle';
+import { HorizontalBracketView } from '../../../components/public/HorizontalBracketView';
+import { useScreenOrientation, ViewOrientation } from '../../../lib/orientation';
+import {
+  BoardCapacity,
+  groupMatchesByIteration,
+  filterMatchesBySearch,
+  getIterationForBoard,
+} from '../../../lib/tournament/iteration';
+import { PlayCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
 interface SelectedWinnerState {
@@ -28,22 +39,31 @@ interface SelectedWinnerState {
 export default function AdminRoundsPage() {
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [currentRound, setCurrentRound] = useState<Round | null>(null);
+  const [allRounds, setAllRounds] = useState<Round[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Winner selection modal state
-  const [selectedWinner, setSelectedWinner] = useState<SelectedWinnerState | null>(null);
+  const { orientation } = useScreenOrientation();
+  const [viewMode, setViewMode] = useState<ViewOrientation>('vertical');
 
-  // Edit result modal state
+  // Search & Iteration state
+  const [capacity, setCapacity] = useState<BoardCapacity>(4);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIteration, setSelectedIteration] = useState<number | 'all'>('all');
+
+  // Modal states
+  const [selectedWinner, setSelectedWinner] = useState<SelectedWinnerState | null>(null);
   const [matchToReset, setMatchToReset] = useState<Match | null>(null);
+  const [matchToManage, setMatchToManage] = useState<Match | null>(null);
 
   const loadData = async () => {
     try {
       const data = await fetchActiveTournament();
       setTournament(data.tournament);
       setCurrentRound(data.currentRound);
+      setAllRounds(data.allRounds);
       setPlayers(data.players);
     } catch (err: unknown) {
       console.error(err);
@@ -151,14 +171,27 @@ export default function AdminRoundsPage() {
     );
   }
 
-  const matches = currentRound?.matches || [];
-  const completedCount = matches.filter((m) => m.status === 'complete').length;
-  const totalCount = matches.length;
+  const rawMatches = currentRound?.matches || [];
+  const completedCount = rawMatches.filter((m) => m.status === 'complete').length;
+  const totalCount = rawMatches.length;
 
   const isFinalRound = currentRound?.round_name === 'Final';
   const isTournamentComplete = tournament.status === 'complete';
   const champion = tournament.winner || players.find((p) => p.id === tournament.winner_id) || null;
   const runnerUp = tournament.runner_up || players.find((p) => p.id === tournament.runner_up_id) || null;
+
+  // Filter matches by Search
+  const searchedMatches = filterMatchesBySearch(rawMatches, searchQuery);
+
+  // Group by Iteration
+  const iterationGroups = groupMatchesByIteration(searchedMatches, capacity);
+
+  // Filter by Selected Iteration
+  const displayedMatches = searchedMatches.filter((m) => {
+    if (selectedIteration === 'all' || capacity === 'all') return true;
+    const iterIdx = Math.ceil(m.board_number / capacity);
+    return iterIdx === selectedIteration;
+  });
 
   return (
     <div className="space-y-8">
@@ -211,25 +244,85 @@ export default function AdminRoundsPage() {
         />
       )}
 
-      {/* Board Cards Grid */}
-      <div className="space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-          MATCH BOARDS ({matches.length})
-        </h3>
+      {/* Search & Board Iterations Control Panel */}
+      {currentRound && (
+        <BoardIterationControls
+          capacity={capacity}
+          onCapacityChange={(cap) => {
+            setCapacity(cap);
+            setSelectedIteration('all');
+          }}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedIteration={selectedIteration}
+          onSelectIteration={setSelectedIteration}
+          iterationGroups={iterationGroups}
+          totalMatches={rawMatches.length}
+          filteredMatchesCount={displayedMatches.length}
+        />
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          {matches.map((match) => (
-            <MatchCard
-              key={match.id}
-              match={match}
-              onSelectWinner={(m, wId, wName, lId, lName) =>
-                handleOpenConfirmWinner(m, wId, wName, lId, lName)
-              }
-              onEditResult={(m) => setMatchToReset(m)}
-            />
-          ))}
+      {/* View Mode & Orientation Controls */}
+      <OrientationToggle
+        currentView={viewMode}
+        onChangeView={setViewMode}
+        isLandscape={orientation === 'landscape'}
+        matchCount={displayedMatches.length}
+      />
+
+      {/* Board Cards Grid or Visual Bracket View */}
+      {viewMode === 'horizontal-tree' && allRounds.length > 0 ? (
+        <HorizontalBracketView
+          allRounds={allRounds}
+          championName={champion?.name}
+          runnerUpName={runnerUp?.name}
+        />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              MATCH BOARDS ({displayedMatches.length} Displayed)
+            </h3>
+            {searchQuery && (
+              <span className="text-xs text-amber-400 font-semibold">
+                Filtered by &quot;{searchQuery}&quot;
+              </span>
+            )}
+          </div>
+
+          {displayedMatches.length === 0 ? (
+            <div className="rounded-2xl bg-slate-900 border border-slate-800 p-12 text-center text-slate-400 text-xs">
+              No matches found matching your search query or iteration filter.
+            </div>
+          ) : (
+            <div
+              className={`grid gap-4 ${
+                viewMode === 'compact-grid'
+                  ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
+                  : 'grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6'
+              }`}
+            >
+              {displayedMatches.map((match) => {
+                const iterInfo = getIterationForBoard(match.board_number, capacity);
+
+                return (
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    iterationTag={capacity !== 'all' ? iterInfo.shortLabel : undefined}
+                    onSelectWinner={(m, wId, wName, lId, lName) =>
+                      handleOpenConfirmWinner(m, wId, wName, lId, lName)
+                    }
+                    onEditResult={(m) => setMatchToReset(m)}
+                    onManageMatch={(m) => setMatchToManage(m)}
+                    compact={viewMode === 'compact-grid'}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Confirm Winner Dialog */}
       {selectedWinner && (
@@ -275,6 +368,19 @@ export default function AdminRoundsPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Swap / Absent Player Management Dialog */}
+      {matchToManage && (
+        <SwapPlayerModal
+          isOpen={Boolean(matchToManage)}
+          onClose={() => setMatchToManage(null)}
+          targetMatch={matchToManage}
+          allMatches={rawMatches}
+          onSuccess={async () => {
+            await loadData();
+          }}
+        />
       )}
     </div>
   );

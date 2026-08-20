@@ -53,6 +53,23 @@ A **fully functional, production-ready web application** for managing college-le
 - No double elimination, no consolation brackets
 - Works for any player count (4, 8, 10, 16, 18, 20, 25, 32, 64, etc.)
 
+### 🔍 Search & Quick Lookup
+- Search matches instantly by player name, board number (e.g., `Board 3`), or match status
+- Works seamlessly across both Admin match management and Public live spectator pages
+- Highlights active search queries and matching board cards in real time
+
+### ♟️ 4 or 6 Physical Board Iteration Batching
+- Support for venues with limited physical chess boards
+- Toggle between **4 Boards**, **6 Boards**, or **All Boards (Unlimited)**
+- Automatically groups round matches into batch iterations (e.g., `Iteration 1 (Boards 1–4)`, `Iteration 2 (Boards 5–8)`)
+- Iteration filter tabs with live completion counters (e.g., `Iter 1 (B1-4) 3/4`)
+- Visual iteration badges on match board cards for easy venue board management
+
+### 👤 Absent Player Management & On-the-Fly Re-Pairing
+- **Mark Absent (Forfeit)**: Grant an immediate forfeit win to an available player if their opponent is absent
+- **Swap Players**: Swap an unavailable player with an available player from another pending match so games don't stall
+- **Shift Board**: Swap board numbers between matches to defer a match to a later physical board iteration
+
 ### 📋 Match Result Interface
 - Clean board cards: **Player A vs Player B**
 - Two large, clearly-labelled winner buttons
