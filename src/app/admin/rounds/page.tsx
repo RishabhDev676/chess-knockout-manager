@@ -410,6 +410,7 @@ export default function AdminRoundsPage() {
           onClose={() => setMatchToManage(null)}
           targetMatch={matchToManage.match}
           initialSlot={matchToManage.slot || 'player1'}
+          tournamentId={tournament?.id}
           allMatches={rawMatches}
           livePlayerIds={livePlayerIds}
           onSuccess={async () => {

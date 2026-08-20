@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { Match } from '../../lib/types';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { UserX, RefreshCw, MoveHorizontal, AlertCircle, RotateCcw, Search, X } from 'lucide-react';
-import { markPlayerAbsentForfeit, swapMatchPlayers, swapBoardNumbers } from '../../lib/tournament/actions';
+import { UserX, RefreshCw, MoveHorizontal, AlertCircle, RotateCcw, Search, X, UserPlus, Plus } from 'lucide-react';
+import { markPlayerAbsentForfeit, swapMatchPlayers, swapBoardNumbers, addNewPlayerToMatch } from '../../lib/tournament/actions';
 
 interface SwapPlayerModalProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ interface SwapPlayerModalProps {
   onSuccess: () => Promise<void>;
   livePlayerIds?: Set<string>;
   initialSlot?: 'player1' | 'player2';
+  tournamentId?: string;
 }
 
 export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
@@ -25,13 +26,17 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
   onSuccess,
   livePlayerIds,
   initialSlot = 'player1',
+  tournamentId,
 }) => {
-  const [activeTab, setActiveTab] = useState<'swap-player' | 'absent' | 'shift-board'>('swap-player');
+  const [activeTab, setActiveTab] = useState<'swap-player' | 'add-player' | 'absent' | 'shift-board'>('swap-player');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Search query for swap modal
   const [swapSearchQuery, setSwapSearchQuery] = useState('');
+
+  // Add new player state
+  const [newPlayerName, setNewPlayerName] = useState('');
 
   // Tab 1: Absent Forfeit State
   const [absentPlayerId, setAbsentPlayerId] = useState<string>(
@@ -76,6 +81,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
     setSelectedOtherSlot('player1');
     setSelectedBoardMatchId('');
     setSwapSearchQuery('');
+    setNewPlayerName('');
     setErrorMsg(null);
   };
 
@@ -103,6 +109,10 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
       } else if (activeTab === 'swap-player') {
         if (!selectedOtherMatchId) throw new Error('Please select a target player to switch with.');
         await swapMatchPlayers(targetMatch.id, selectedSlot, selectedOtherMatchId, selectedOtherSlot);
+      } else if (activeTab === 'add-player') {
+        if (!newPlayerName.trim()) throw new Error('Please enter the name of the new player.');
+        if (!tournamentId) throw new Error('Tournament ID is required to add a new player.');
+        await addNewPlayerToMatch(tournamentId, targetMatch.id, selectedSlot, newPlayerName.trim());
       } else if (activeTab === 'shift-board') {
         if (!selectedBoardMatchId) throw new Error('Please select a board match to swap positions with.');
         await swapBoardNumbers(targetMatch.id, selectedBoardMatchId);
@@ -136,6 +146,17 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Switch Player
+          </button>
+          <button
+            onClick={() => setActiveTab('add-player')}
+            className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'add-player'
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            Add Player
           </button>
           <button
             onClick={() => setActiveTab('absent')}
@@ -173,6 +194,8 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             {activeTab === 'swap-player'
               ? 'Direct Player Switch'
+              : activeTab === 'add-player'
+              ? 'Add New Player to Board'
               : activeTab === 'absent'
               ? 'Mark Forfeit'
               : 'Rearrange Board Order'}
@@ -346,6 +369,69 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
           </div>
         )}
 
+        {/* Tab 4: Add New Player directly to Board */}
+        {activeTab === 'add-player' && (
+          <div className="space-y-4">
+            <p className="text-xs text-slate-300">
+              Create a new player in the tournament and place them directly onto Board {targetMatch.board_number}.
+            </p>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                Select Slot to Replace / Fill:
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedSlot('player1')}
+                  className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all ${
+                    selectedSlot === 'player1'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="text-[10px] text-slate-500">Player 1 Slot</div>
+                  <div className="truncate text-sm">{p1?.name || 'P1'}</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSlot('player2')}
+                  className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all ${
+                    selectedSlot === 'player2'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="text-[10px] text-slate-500">Player 2 Slot</div>
+                  <div className="truncate text-sm">{p2?.name || 'P2'}</div>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                New Player Name:
+              </label>
+              <input
+                type="text"
+                value={newPlayerName}
+                onChange={(e) => setNewPlayerName(e.target.value)}
+                placeholder="Enter full name (e.g. Charlie Brown)..."
+                className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+
+            {newPlayerName.trim() && (
+              <div className="rounded-xl bg-emerald-950/40 border border-emerald-500/40 p-3 text-xs text-emerald-300 flex items-center gap-2">
+                <Plus className="w-4 h-4 shrink-0 text-emerald-400" />
+                <div>
+                  Will create <strong>&quot;{newPlayerName.trim()}&quot;</strong> and place them on Board {targetMatch.board_number} ({selectedSlot === 'player1' ? 'P1' : 'P2'}).
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Tab 3: Shift Board Iteration */}
         {activeTab === 'shift-board' && (
           <div className="space-y-4">
@@ -417,6 +503,8 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
                 ? 'Confirm Absence Forfeit'
                 : activeTab === 'swap-player'
                 ? 'Confirm Player Swap'
+                : activeTab === 'add-player'
+                ? 'Add & Assign Player'
                 : 'Confirm Board Shift'}
             </Button>
           </div>

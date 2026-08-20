@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, User, RefreshCw } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, User, RefreshCw, Plus, Trash2, UserPlus } from 'lucide-react';
 import { parseExcelFile, ParseExcelResult } from '../../lib/excel/parseExcel';
 import { ExtractedPlayer } from '../../lib/types';
 import { Button } from '../ui/Button';
@@ -18,6 +18,7 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [tournamentName, setTournamentName] = useState('Monsoon Sports Chess 2026');
   const [parsedResult, setParsedResult] = useState<ParseExcelResult | null>(null);
+  const [newPlayerInput, setNewPlayerInput] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -35,6 +36,53 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
       setErrorMsg(err instanceof Error ? err.message : 'Failed to process Excel file.');
       setParsedResult(null);
     }
+  };
+
+  const handleAddManualPlayer = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanName = newPlayerInput.trim();
+    if (!cleanName) return;
+
+    const newPlayer: ExtractedPlayer = {
+      id: `manual_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      name: cleanName,
+      isDuplicate: false,
+    };
+
+    setParsedResult((prev) => {
+      const currentPlayers = prev ? [...prev.players] : [];
+      const updatedPlayers = [...currentPlayers, newPlayer];
+      
+      // Check duplicate
+      const hasDup = currentPlayers.some((p) => p.name.toLowerCase() === cleanName.toLowerCase());
+      if (hasDup) {
+        newPlayer.isDuplicate = true;
+      }
+
+      const dupCount = updatedPlayers.filter((p) => p.isDuplicate).length;
+
+      return {
+        players: updatedPlayers,
+        totalCount: updatedPlayers.length,
+        duplicateCount: dupCount,
+        warnings: hasDup ? [...(prev?.warnings || []), `Duplicate name added: "${cleanName}"`] : (prev?.warnings || []),
+      };
+    });
+
+    setNewPlayerInput('');
+    setErrorMsg(null);
+  };
+
+  const handleRemovePlayer = (playerId: string) => {
+    setParsedResult((prev) => {
+      if (!prev) return null;
+      const updatedPlayers = prev.players.filter((p) => p.id !== playerId);
+      return {
+        ...prev,
+        players: updatedPlayers,
+        totalCount: updatedPlayers.length,
+      };
+    });
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -85,17 +133,38 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
   return (
     <div className="w-full space-y-6">
       {/* Tournament Settings Card */}
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-xl">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-          Tournament Name
-        </label>
-        <input
-          type="text"
-          value={tournamentName}
-          onChange={(e) => setTournamentName(e.target.value)}
-          placeholder="e.g. Monsoon Sports Chess 2026"
-          className="w-full rounded-xl bg-slate-950 border border-slate-800 px-4 py-3 text-slate-100 font-semibold text-base focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all"
-        />
+      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-xl space-y-4">
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            Tournament Name
+          </label>
+          <input
+            type="text"
+            value={tournamentName}
+            onChange={(e) => setTournamentName(e.target.value)}
+            placeholder="e.g. Monsoon Sports Chess 2026"
+            className="w-full rounded-xl bg-slate-950 border border-slate-800 px-4 py-3 text-slate-100 font-semibold text-base focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all"
+          />
+        </div>
+
+        {/* Manual Player Input Bar */}
+        <div className="pt-2 border-t border-slate-800">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2 flex items-center gap-1.5">
+            <UserPlus className="w-4 h-4" /> Add Player Manually
+          </label>
+          <form onSubmit={handleAddManualPlayer} className="flex gap-2">
+            <input
+              type="text"
+              value={newPlayerInput}
+              onChange={(e) => setNewPlayerInput(e.target.value)}
+              placeholder="Type player name (e.g. Magnus Carlsen)..."
+              className="flex-1 rounded-xl bg-slate-950 border border-slate-800 px-4 py-2.5 text-xs text-slate-100 font-medium placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+            />
+            <Button type="submit" variant="primary" size="md" disabled={!newPlayerInput.trim()}>
+              <Plus className="w-4 h-4 mr-1" /> Add Player
+            </Button>
+          </form>
+        </div>
       </div>
 
       {/* Upload Zone */}
@@ -136,7 +205,7 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
           </div>
 
           <p className="mt-4 text-[11px] text-slate-500">
-            Column A should contain player names. Headers and empty rows are handled automatically.
+            Or use the &quot;Add Player Manually&quot; input above to create a player list without Excel.
           </p>
         </div>
       ) : (
@@ -147,7 +216,7 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 <h3 className="text-lg font-bold text-slate-100">
-                  Player List Extracted
+                  Player List Extracted & Configured
                 </h3>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -158,7 +227,7 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
               onClick={handleReset}
               className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" /> Change File
+              <RefreshCw className="w-3.5 h-3.5" /> Clear All
             </button>
           </div>
 
@@ -166,7 +235,7 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
           {parsedResult.warnings.length > 0 && (
             <div className="rounded-xl bg-amber-950/50 border border-amber-800/60 p-4 space-y-1 text-xs text-amber-300">
               <div className="flex items-center gap-2 font-bold text-amber-400">
-                <AlertTriangle className="w-4 h-4" /> Duplicate Warnings:
+                <AlertTriangle className="w-4 h-4" /> Warnings:
               </div>
               <ul className="list-disc list-inside space-y-0.5 text-[11px] text-amber-200/80">
                 {parsedResult.warnings.map((w, idx) => (
@@ -179,7 +248,7 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
           {/* Player Grid / List */}
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-              Extracted Players ({parsedResult.totalCount})
+              Configured Players ({parsedResult.totalCount})
             </h4>
             <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-2 divide-y divide-slate-900">
               {parsedResult.players.map((player, index) => (
@@ -196,11 +265,20 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
                       {player.name}
                     </span>
                   </div>
-                  {player.isDuplicate && (
-                    <span className="text-[10px] bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-full font-medium">
-                      Duplicate Name
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {player.isDuplicate && (
+                      <span className="text-[10px] bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-full font-medium">
+                        Duplicate Name
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleRemovePlayer(player.id)}
+                      className="text-slate-500 hover:text-rose-400 p-1 transition-colors"
+                      title="Remove player"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -215,7 +293,7 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
               size="lg"
               fullWidth
             >
-              Confirm Player List & Start Tournament
+              Confirm Player List ({parsedResult.totalCount} Players) & Start Tournament
             </Button>
           </div>
         </div>

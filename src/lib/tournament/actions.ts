@@ -298,6 +298,43 @@ export async function markPlayerAbsentForfeit(
   await setMatchWinner(matchId, presentPlayerId, absentPlayerId);
 }
 
+export async function addNewPlayerToMatch(
+  tournamentId: string,
+  matchId: string,
+  slot: 'player1' | 'player2',
+  playerName: string
+): Promise<Player> {
+  const supabase = createClient();
+
+  // 1. Insert new player into Supabase 'players' table
+  const { data: player, error: pErr } = await supabase
+    .from('players')
+    .insert({
+      tournament_id: tournamentId,
+      name: playerName.trim(),
+      status: 'active',
+    })
+    .select()
+    .single();
+
+  if (pErr || !player) {
+    throw new Error(`Failed to create new player: ${pErr?.message}`);
+  }
+
+  // 2. Update match slot with new player_id
+  const pField = slot === 'player1' ? 'player1_id' : 'player2_id';
+  const { error: mErr } = await supabase
+    .from('matches')
+    .update({ [pField]: player.id })
+    .eq('id', matchId);
+
+  if (mErr) {
+    throw new Error(`Failed to assign player to board: ${mErr.message}`);
+  }
+
+  return player as Player;
+}
+
 export async function generateNextRoundForTournament(
   tournamentId: string
 ): Promise<Round> {
