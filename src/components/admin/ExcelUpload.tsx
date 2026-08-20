@@ -111,8 +111,8 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
   };
 
   const handleConfirm = async () => {
-    if (!parsedResult || parsedResult.players.length < 2) {
-      setErrorMsg('A tournament requires at least 2 players.');
+    if (!parsedResult || parsedResult.players.length < 1) {
+      setErrorMsg('Please add at least 1 player to start the tournament.');
       return;
     }
     if (!tournamentName.trim()) {
@@ -150,7 +150,7 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
         {/* Manual Player Input Bar */}
         <div className="pt-2 border-t border-slate-800">
           <label className="block text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2 flex items-center gap-1.5">
-            <UserPlus className="w-4 h-4" /> Add Player Manually
+            <UserPlus className="w-4 h-4" /> Add Player Manually (Any Number Allowed)
           </label>
           <form onSubmit={handleAddManualPlayer} className="flex gap-2">
             <input
@@ -216,12 +216,19 @@ export const ExcelUpload: React.FC<ExcelUploadProps> = ({
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 <h3 className="text-lg font-bold text-slate-100">
-                  Player List Extracted & Configured
+                  Player List Configured ({parsedResult.totalCount} Players)
                 </h3>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Total Players: <strong className="text-amber-400 font-bold">{parsedResult.totalCount}</strong>
-              </p>
+              <div className="text-xs text-slate-400 mt-1 flex items-center gap-2">
+                <span>Total Players: <strong className="text-amber-400 font-bold">{parsedResult.totalCount}</strong></span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  parsedResult.totalCount % 2 === 0
+                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                    : 'bg-blue-950 text-blue-300 border border-blue-800'
+                }`}>
+                  {parsedResult.totalCount % 2 === 0 ? '✓ Even Count' : '⚡ Odd Count (1 Auto-BYE)'}
+                </span>
+              </div>
             </div>
             <button
               onClick={handleReset}
