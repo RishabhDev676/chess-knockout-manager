@@ -343,6 +343,63 @@ export async function swapBoardNumbers(match1Id: string, match2Id: string): Prom
   await supabase.from('matches').update({ board_number: board1 }).eq('id', match2Id);
 }
 
+/**
+ * Moves the automatic bye to a player on an unfinished board while keeping
+ * the former bye player in that player's previous slot.
+ */
+export async function transferBye(
+  byeMatchId: string,
+  recipientMatchId: string,
+  recipientSlot: 'player1' | 'player2'
+): Promise<void> {
+  const supabase = createClient();
+  const { data: byeMatch, error: byeFetchError } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('id', byeMatchId)
+    .single();
+  const { data: recipientMatch, error: recipientFetchError } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('id', recipientMatchId)
+    .single();
+
+  if (byeFetchError || !byeMatch?.is_bye || !byeMatch.player1_id) {
+    throw new Error('The current round does not have a valid bye to transfer.');
+  }
+  if (recipientFetchError || !recipientMatch || recipientMatch.is_bye || recipientMatch.status !== 'pending') {
+    throw new Error('A bye can only be assigned to a player on an unfinished match.');
+  }
+
+  const recipientField = recipientSlot === 'player1' ? 'player1_id' : 'player2_id';
+  const recipientPlayerId = recipientMatch[recipientField];
+  if (!recipientPlayerId) {
+    throw new Error('Select a player before transferring the bye.');
+  }
+
+  const { error: moveError } = await supabase
+    .from('matches')
+    .update({ [recipientField]: byeMatch.player1_id })
+    .eq('id', recipientMatchId);
+
+  if (moveError) {
+    throw new Error(`Failed to move the former bye player: ${moveError.message}`);
+  }
+
+  const { error: assignError } = await supabase
+    .from('matches')
+    .update({ player1_id: recipientPlayerId, winner_id: recipientPlayerId })
+    .eq('id', byeMatchId);
+
+  if (assignError) {
+    await supabase
+      .from('matches')
+      .update({ [recipientField]: recipientPlayerId })
+      .eq('id', recipientMatchId);
+    throw new Error(`Failed to assign the bye: ${assignError.message}`);
+  }
+}
+
 export async function markPlayerAbsentForfeit(
   matchId: string,
   absentPlayerId: string,

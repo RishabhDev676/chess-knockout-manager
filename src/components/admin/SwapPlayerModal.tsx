@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { Match } from '../../lib/types';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { UserX, RefreshCw, MoveHorizontal, AlertCircle, RotateCcw, Search, X, UserPlus, Plus } from 'lucide-react';
-import { markPlayerAbsentForfeit, swapMatchPlayers, swapBoardNumbers, addNewPlayerToMatch } from '../../lib/tournament/actions';
+import { UserX, RefreshCw, MoveHorizontal, AlertCircle, RotateCcw, Search, X, UserPlus, Plus, Gift } from 'lucide-react';
+import { markPlayerAbsentForfeit, swapMatchPlayers, swapBoardNumbers, addNewPlayerToMatch, transferBye } from '../../lib/tournament/actions';
 
 interface SwapPlayerModalProps {
   isOpen: boolean;
@@ -26,7 +26,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
   initialSlot = 'player1',
   tournamentId,
 }) => {
-  const [activeTab, setActiveTab] = useState<'swap-player' | 'add-player' | 'absent' | 'shift-board'>('swap-player');
+  const [activeTab, setActiveTab] = useState<'swap-player' | 'add-player' | 'absent' | 'shift-board' | 'transfer-bye'>('swap-player');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -51,6 +51,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
 
   const p1 = targetMatch.player1;
   const p2 = targetMatch.player2;
+  const byeMatch = allMatches.find((match) => match.is_bye && match.player1_id && match.status === 'complete');
 
   // The event head can rearrange every unfinished board. Completed games remain
   // protected so their result history is never changed by a pairing edit.
@@ -111,6 +112,9 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
       } else if (activeTab === 'shift-board') {
         if (!selectedBoardMatchId) throw new Error('Please select a board match to swap positions with.');
         await swapBoardNumbers(targetMatch.id, selectedBoardMatchId);
+      } else if (activeTab === 'transfer-bye') {
+        if (!byeMatch) throw new Error('There is no bye in this round to transfer.');
+        await transferBye(byeMatch.id, targetMatch.id, selectedSlot);
       }
 
       await onSuccess();
@@ -130,7 +134,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
     >
       <div className="space-y-5">
         {/* Navigation Tabs */}
-        <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs font-bold gap-1">
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs font-bold sm:grid-cols-5">
           <button
             onClick={() => setActiveTab('swap-player')}
             className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
@@ -166,7 +170,7 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('shift-board')}
-            className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+            className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'shift-board'
                 ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                 : 'text-slate-400 hover:text-slate-200'
@@ -174,6 +178,17 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
           >
             <MoveHorizontal className="w-3.5 h-3.5" />
             Shift Board
+          </button>
+          <button
+            onClick={() => setActiveTab('transfer-bye')}
+            className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'transfer-bye'
+                ? 'bg-violet-500/20 text-violet-200 border border-violet-500/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Gift className="w-3.5 h-3.5" />
+            Give Bye
           </button>
         </div>
 
@@ -193,6 +208,8 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
               ? 'Add New Player to Board'
               : activeTab === 'absent'
               ? 'Mark Forfeit'
+              : activeTab === 'transfer-bye'
+              ? 'Give Bye'
               : 'Rearrange Board Order'}
           </span>
           <button
@@ -430,6 +447,43 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
           </div>
         )}
 
+        {activeTab === 'transfer-bye' && (
+          <div className="space-y-4">
+            {byeMatch?.player1 ? (
+              <>
+                <p className="text-xs leading-relaxed text-slate-300">
+                  Give the automatic bye to either player on this unfinished board. <strong className="text-violet-300">{byeMatch.player1.name}</strong> will take their place, so every player stays paired exactly once.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['player1', 'player2'] as const).map((slot) => {
+                    const player = slot === 'player1' ? p1 : p2;
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        disabled={!player}
+                        onClick={() => setSelectedSlot(slot)}
+                        className={`rounded-xl border p-3 text-left text-xs font-bold transition-all ${
+                          selectedSlot === slot
+                            ? 'border-violet-400 bg-violet-500/20 text-violet-200'
+                            : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-violet-500/50'
+                        }`}
+                      >
+                        <span className="block text-[10px] text-slate-500">Give bye to</span>
+                        <span className="block truncate text-sm">{player?.name || 'Empty slot'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-center text-xs text-slate-400">
+                This round has no automatic bye to transfer.
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Tab 3: Shift Board Iteration */}
         {activeTab === 'shift-board' && (
           <div className="space-y-4">
@@ -503,6 +557,8 @@ export const SwapPlayerModal: React.FC<SwapPlayerModalProps> = ({
                 ? 'Confirm Player Swap'
                 : activeTab === 'add-player'
                 ? 'Add & Assign Player'
+                : activeTab === 'transfer-bye'
+                ? 'Confirm Bye Assignment'
                 : 'Confirm Board Shift'}
             </Button>
           </div>
